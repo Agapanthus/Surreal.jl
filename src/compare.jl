@@ -41,6 +41,15 @@ end
 ==(x::Surreal, y::Surreal) = y <= x && x <= y
 <(x::Surreal, y::Surreal) = x <= y && !(y <= x)
 
+==(x::Surreal, y) = x == Surreal(y)
+==(x, y::Surreal) = Surreal(x) == y
+<(x::Surreal, y) = x < Surreal(y)
+<(x, y::Surreal) = Surreal(x) < y
+<=(x::Surreal, y) = x <= Surreal(y)
+<=(x, y::Surreal) = Surreal(x) <= y
+>=(x::Surreal, y) = x >= Surreal(y)
+>=(x, y::Surreal) = Surreal(x) >= y
+
 function <=(x::Side, y::Side)
 	isempty(x) && return true
 	isempty(y) && return true

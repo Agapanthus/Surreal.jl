@@ -61,3 +61,7 @@ function value(s::Side)::Surreal
 	@assert !isnothing(s.x)
 	s.x.v
 end
+
+Surreal(x, y) = Surreal(Surreal(x), Surreal(y))
+Surreal(x, y::Surreal) = Surreal(Surreal(x), y)
+Surreal(x::Surreal, y) = Surreal(x, Surreal(y))

@@ -19,10 +19,6 @@ function Surreal(n::Integer)
 	s
 end
 
-Surreal(x::Integer, y::Integer) = Surreal(Surreal(x), Surreal(y))
-Surreal(x::Integer, y::Surreal) = Surreal(Surreal(x), y)
-Surreal(x::Surreal, y::Integer) = Surreal(x, Surreal(y))
-
 @assert Surreal(6) >= Surreal(3)
 @assert Surreal(1) == Surreal(0, 2)
 @assert Surreal(Surreal(-1, 0), ∅) == S0
