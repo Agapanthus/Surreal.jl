@@ -2,39 +2,42 @@ import Base.(>=), Base.(==), Base.(<=), Base.(<)
 
 ==(s::Side, t::SSetType) = !isempty(s) && s.x.t == t
 
+#=
 
-
-function <(x::Side, y::Surreal)
+function <=(x::Side, y::Surreal)
 	isempty(x) && return true
-
-	if x == SSetLit
-		return value(x) < y
-	elseif x == SSetId
-		# is it greater than any natural number?
-		isPositive(y) || return false
-		return !isFinite(y)
-	else
-
-		return compareAll(x, y, :le)
-	end
-
-	todo
+	x == SSetLit && return value(x) <= y
+	return eachLeft(x) < y && x < y.R
 end
 
-function <(x::Surreal, y::Side)
-
+function <=(x::Surreal, y::Side)
 	isempty(y) && return true
-	#isempty(x) && return isPositive(y)
-	y == SSetLit && return x < value(y)
-
-	return compareAll(x, y, :le)
-
-	@show x y
-	todo
+	y == SSetLit && return x <= value(y)
+	return x.L < y && x < eachRight(y)
 end
+=#
+
+function <(x::Side, y::Surreal) # = isempty(x) || (x <= y && !(y <= x))
+	isempty(x) && return true
+	x == SSetLit && return value(x) < y
+	return proofLess(x, y)
+end
+
+function <(x::Surreal, y::Side) # = isempty(y) || (x <= y && !(y <= x))
+	isempty(y) && return true
+	y == SSetLit && return x < value(y)
+	return proofLess(x, y)
+end
+
+#=
+>(x::Side, y::Surreal) = y < x
+>(x::Surreal, y::Side) = y < x
+==(x::Surreal, y::Side) = y <= x && x <= y
+==(x::Side, y::Surreal) = y <= x && x <= y
+=#
 
 >=(x::Surreal, y::Surreal) = y <= x
-<=(x::Surreal, y::Surreal) = x.L < y && x < y.R # !any(l -> l >= y, x.L) && !any(r -> x >= r, y.R)
+<=(x::Surreal, y::Surreal) = x.L < y && x < y.R # notAnyGeq(x.L, y) && notAnyGeq(x, y.R) 
 ==(x::Surreal, y::Surreal) = y <= x && x <= y
 <(x::Surreal, y::Surreal) = x <= y && !(y <= x)
 
@@ -57,7 +60,7 @@ function <=(x::Side, y::Side)::Union{Nothing, Bool}
 	structEq(x, y) && return true
 
 	if y == SSetLit
-		local res = compareAll(value(y), x, :geq)
+		local res = compareAll(x, value(y), :leq)
 		res == true && return true
 		res == false && return false
 	end

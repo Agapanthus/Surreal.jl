@@ -1,5 +1,5 @@
-using SymPy
 using PyCall
+using SymPy
 using Symbolics
 using Latexify
 
@@ -25,7 +25,7 @@ function sideToF(s::Side, xVar)
 	elseif s == SSetNeg
 		return -sideToF(left(s), xVar)
 	elseif s == SSetLit
-		@assert isFiniteStructure(value(s))
+		@assert isFiniteStructure(value(s)) value(s)
 		return toR(value(s))
 	end
 
@@ -64,12 +64,13 @@ function containsNaturals(x, xVar = nothing, yVar = nothing)::Union{Bool, Nothin
 	return nothing
 end
 
-getPyType(x::PyObject)::String = pycall(pybuiltin("type"), PyObject, x).__name__
+getPyType(x::PyCall.PyObject)::String = pycall(pybuiltin("type"), PyCall.PyObject, x).__name__
 
 
 function sympyGetNumeric(x)
 	try
-		x + 0
+		local res = N(x)
+		typeof(res) == Sym && return nothing
 	catch err
 		return nothing
 	end
@@ -106,6 +107,15 @@ function containsAnyNatural(x)::Bool
 			z = sympyGetNumeric(x.args[2])
 			# if 1 fits below, that's fine
 			!isnothing(z) && z >= 1 && return true
+		
+		elseif t in ["GreaterThan"]
+			local z = sympyGetNumeric(x.args[2])
+			# greater than something is always natural
+			!isnothing(z) && return true
+
+			z = sympyGetNumeric(x.args[1])
+			# if 1 fits below, that's fine
+			!isnothing(z) && z >= 1 && return true
 
 		elseif t in ["Half"]
 			# pass
@@ -122,17 +132,96 @@ function containsAnyNatural(x)::Bool
 	return false
 end
 
+function eachRight(y::Side)::Side
+	# todo: use symbolics to normalize expressions!
 
-function compareAll(x::Surreal, y::Side, op::Symbol)::Union{Nothing, Bool}
-	isempty(y) && return true
+	# unwrap literals
+	y == SSetLit && return value(y).R
+
+	# open to the right
+	#y == SSetId && return ∅
+
+	# adding finite values doesn't change anything in a countably infinite set
+	#y == SSetAdd && left(y) == SSetId && right(y) == SSetLit && isFinite(value(right(y))) && return ∅
+
+	# TODO: is this correct?
+	return y
+
+
+	@show y
+	todo
+end
+
+#=
+function eachLeft(y::Side)::Side
+	# todo: use symbolics to normalize expressions!
+
+	# adding finite values doesn't change anything in a countably infinite set
+	y == SSetAdd && left(y) == SSetId && right(y) == SSetLit && isFinite(value(right(y))) && return Side(SSetId)
+
+	y == SSetLit && return value(y).L
+
+	# subtract one to get lower bounds 
+	y == SSetId && return Side(SSetAdd, y, S(-1))
+
+	@show y
+	todo
+end
+=#
+
+function compareAll(x::Surreal, s::Side, op::Symbol)::Union{Nothing, Bool}
+	# all s compare to x as specified
+
+	#@show x s
+
+	isempty(s) && return true
 
 	if !isFiniteStructure(x)
 
-		if op == :geq && x == ω && structEq(y, Side(SSetAdd, Side(SSetId), Side(S1)))
+		#=
+		if op == :geq && x == ω && structEq(s, Side(SSetAdd, Side(SSetId), Side(S1)))
 			return true
 		end
+		=#
 
-		@show op x y
+		if op == :le
+			# all x.L < all s
+			#@show x s
+
+			#=local res = compareAll(x.L, s, :le)
+			isnothing(res) && return nothing
+			res == false && return false
+
+			todo=#
+
+			#@show x.L s
+
+			# all xL < s
+			local res = compareAll(x.L, s, :le)
+			#@show res
+			isnothing(res) && return nothing
+			res == false && return false
+
+			# all x < sR
+			#@show x s
+			compareAll(x, eachRight(s), :le)
+
+			# todo: and not equal!
+			todo
+
+		elseif op == :ge
+			# all x.L < all s
+			
+			#= @show x s
+
+			local res = compareAll(s, x.L, :le)
+			isnothing(res) && return nothing
+			res == false && return false
+
+			todo=#
+		end
+
+		@show op x s
 		todo
 
 		# x.L < x < x.R
@@ -152,28 +241,34 @@ function compareAll(x::Surreal, y::Side, op::Symbol)::Union{Nothing, Bool}
 
 	# ignores previous assumptions, but returns consistent results and all results (unlike solve)
 	# https://docs.sympy.org/latest/modules/solvers/solveset.html
-	local f = getCompOperation(op)(toR(x), sideToF(y, xVar))
+	local f = getCompOperation(op)(toR(x), sideToF(s, xVar))
 	#display(f)
 	local res = solveset(f, xVar, domain = sympy.S.Naturals)
 	#display(res)
 	#@show containsNaturals(res, xVar)
 
-	if showDebug
-		@show x
-		display(sideToF(y, xVar))
-	end
-
-
 	return containsNaturals(res, xVar)
+
+
 end
 
 
-function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
-	# all left are strictly less than all right
+function compareAll(x::Side, y::Surreal, op::Symbol)
+	return compareAll(y, x, invertOp(op))
+end
 
+function proofLess(x::Surreal, s::Side)
+	# TODO
+	return compareAll(x, s, :le)
+end
+
+function proofLess(s::Side, x::Surreal)
+	# TODO
+	return compareAll(x, s, :ge)
+end
+
+function compareAllSympyFallback(x, y, op)
 	@assert op == :le
-	isempty(y) && return true
-	isempty(x) && return true
 
 	begin
 		local xVar = symbols("x")
@@ -194,11 +289,13 @@ function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
 	local yVar = symbols("y", real = true, nonnegative = true, integer = true)
 
 	function tryFindCounterexample(yVar)
-		try
+		#try
 			local xVar = symbols("x", real = true, nonnegative = true, integer = true)
 			#local slackVar = symbols("s", real = true, nonnegative = true)
 			local f = GreaterThan(sideToF(x, xVar + 1), sideToF(y, yVar + 1))
 			#local f = Eq(sideToF(x, xVar + 1) - sideToF(y, yVar + 1) + slackVar, 0)
+
+			f = sympy.simplify(f)
 
 			# this is always the other way around. stop now.
 			f == true && return false
@@ -215,9 +312,10 @@ function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
 
 				#display(res)
 			end
-		catch err
+		#catch err
+		#	@show err
 			# skip due to error
-		end
+		#end
 		return nothing
 	end
 
@@ -230,11 +328,20 @@ function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
 	return nothing
 end
 
+function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
+	# all left are strictly less than all right
+
+	#@show x y
+
+	@assert op == :le
+	isempty(y) && return true
+	isempty(x) && return true
 
 
-function compareAll(x::Side, y::Surreal, op::Symbol)
-	return compareAll(y, x, invertOp(op))
+	return compareAllSympyFallback(x, y, op)
 end
+
+
 
 function sympyIsEmpty(x)::Bool
 	# TODO: does this work?
