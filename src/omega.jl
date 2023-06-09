@@ -1,6 +1,6 @@
 
 
-const ω = Surreal(SSS(SSetId), ∅)
+const ω = Surreal(Side(SSetId), ∅)
 
 @assert Surreal(42) < ω
 @assert !(Surreal(42) > ω)

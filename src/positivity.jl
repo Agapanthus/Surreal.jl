@@ -1,13 +1,20 @@
 
-function isPositive(x::Surreal)
-    # strictly positive
+function isPositive(x::Surreal)::Bool
+	# strictly positive
 
-    isempty(x) && return false
+	iszero(x) && return false
 
-    # TODO: is this correct?
-    isempty(x.R) && !isempty(x.L) && return true
+	# TODO: is this correct?
+	#isempty(x.R) && !isempty(x.L) && return true
 
-    @show x
-    todo
+    return x >= S0
 end
 
+
+function isNegative(x::Surreal)::Bool
+	iszero(x) && return false
+
+
+    return x <= S0
+	#return isPositive(-x)
+end

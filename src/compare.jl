@@ -1,45 +1,54 @@
-import Base.(>=), Base.(==), Base.(<=), Base.(<), Base.(>), Base.isless
+import Base.(>=), Base.(==), Base.(<=), Base.(<)
 
-
-function <(x::SS, y::Surreal)
-    isempty(x) && return true
-
-    if x.t == SSetLit
-        return x.v < y
-    elseif x.t == SSetId
-        # is it greater than any natural number?
-        isPositive(y) || return false
-        return !isFinite(y)
-    end
-
-    todo
+==(s::Side, t::SSetType) = !isempty(s) && s.x.t == t
+function ==(a::Side, b::Side) 
+	isempty(a) && isempty(b) && return true
+	(isempty(a) || isempty(b)) && return false
+	a.x.t == b.x.t || return false
+	a.x.t == SSetLit && return value(a) == value(b)
+	a.x.t == SSetId && return true
+	todo
 end
 
-function <(x::Surreal, y::SS)
-    isempty(y) && return true
 
-    if y.t == SSetLit
-        return x < y.v
-    end
+function <(x::Side, y::Surreal)
+	isempty(x) && return true
 
-    @show x y
-    todo
+	if x == SSetLit
+		return value(x) < y
+	elseif x == SSetId
+		# is it greater than any natural number?
+		isPositive(y) || return false
+		return !isFinite(y)
+	end
+
+	todo
+end
+
+function <(x::Surreal, y::Side)
+	isempty(y) && return true
+
+	if y == SSetLit
+		return x < value(y)
+	end
+
+	@show x y
+	todo
 end
 
 >=(x::Surreal, y::Surreal) = y <= x
 <=(x::Surreal, y::Surreal) = x.L < y && x < y.R # !any(l -> l >= y, x.L) && !any(r -> x >= r, y.R)
 ==(x::Surreal, y::Surreal) = y <= x && x <= y
 <(x::Surreal, y::Surreal) = x <= y && !(y <= x)
->(x::Surreal, y::Surreal) = y < x
 
-function <=(x::SS, y::SS)
-    isempty(x) && return true
-    isempty(y) && return true
-    x.t == SSetLit && y.t == SSetLit && return x.v <= y.v
+function <=(x::Side, y::Side)
+	isempty(x) && return true
+	isempty(y) && return true
+	x == SSetLit && y == SSetLit && return value(x) <= value(y)
 
-    todo
+	todo
 end
 
->=(x::SS, y::SS) = y <= x
-==(x::SS, y::SS) = y <= x && x <= y
-<(x::SS, y::SS) = isempty(x) || isempty(y) || (x <= y && !(y <= x))
+>=(x::Side, y::Side) = y <= x
+==(x::Side, y::Side) = y <= x && x <= y
+<(x::Side, y::Side) = isempty(x) || isempty(y) || (x <= y && !(y <= x))

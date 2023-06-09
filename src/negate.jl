@@ -1,10 +1,13 @@
 
 Base.:-(::Nothing) = nothing
-function Base.:-(x::SSS)::SSS
-    isempty(x) && return ∅
-    x.t == SSetLit && return SSS(SSetLit, ∅, ∅, -x.v)
-    x.t == SSetId && return SSS(SSetNeg, SSS(SSetId))
-    
-    todo
+function Base.:-(x::Side)::Side
+	isempty(x) && return ∅
+	x == SSetLit && return Side(SSetLit, ∅, ∅, -value(x))
+	x == SSetId && return Side(SSetNeg, Side(SSetId))
+
+	@show x
+	todo
 end
 Base.:-(x::Surreal)::Surreal = Surreal(-x.R, -x.L)
+
+@assert Surreal(Surreal(-1, 0), ∅) == -Surreal(Surreal(-1, 0), ∅)
