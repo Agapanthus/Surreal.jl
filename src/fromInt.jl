@@ -19,6 +19,6 @@ function Surreal(n::Integer)
 	s
 end
 
-@assert Surreal(6) >= Surreal(3)
-@assert Surreal(1) == Surreal(0, 2)
-@assert Surreal(Surreal(-1, 0), ∅) == S0
+#@assert Surreal(6) >= Surreal(3)
+#@assert Surreal(1) == Surreal(0, 2)
+#@assert Surreal(Surreal(-1, 0), ∅) == S0

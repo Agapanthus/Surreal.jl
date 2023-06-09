@@ -12,7 +12,7 @@ function PyObject(ex::Num)::Sym
 end
 
 function sideToF(s::Side, xVar)
-	@assert !isnothing(s)
+	@assert !isempty(s)
 
 	if s == SSetId
 		return xVar
@@ -25,7 +25,7 @@ function sideToF(s::Side, xVar)
 	elseif s == SSetNeg
 		return -sideToF(left(s), xVar)
 	elseif s == SSetLit
-		@assert isFinite(value(s))
+		@assert isFiniteStructure(value(s))
 		return toR(value(s))
 	end
 
@@ -126,15 +126,44 @@ end
 function compareAll(x::Surreal, y::Side, op::Symbol)::Union{Nothing, Bool}
 	isempty(y) && return true
 
+	if !isFiniteStructure(x)
+
+		if op == :geq && x == ω && structEq(y, Side(SSetAdd, Side(SSetId), Side(S1)))
+			return true
+		end
+
+		@show op x y
+		todo
+
+		# x.L < x < x.R
+		#          [--- y ---]
+
+
+		# x.L < y   forall y
+		# x < allRight(y)
+		# for no y: y == x 
+	end
+
 	# TODO: currently required
-	@assert isFinite(x)
+	@assert isFiniteStructure(x)
 
 	local xVar = symbols("x")
 
+
 	# ignores previous assumptions, but returns consistent results and all results (unlike solve)
 	# https://docs.sympy.org/latest/modules/solvers/solveset.html
-	local res = solveset(getCompOperation(op)(toR(x), sideToF(y, xVar)), xVar, domain = sympy.S.Naturals)
+	local f = getCompOperation(op)(toR(x), sideToF(y, xVar))
+	#display(f)
+	local res = solveset(f, xVar, domain = sympy.S.Naturals)
 	#display(res)
+	#@show containsNaturals(res, xVar)
+
+	if showDebug
+		@show x
+		display(sideToF(y, xVar))
+	end
+
+
 	return containsNaturals(res, xVar)
 end
 
@@ -193,7 +222,7 @@ function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
 	end
 
 	tryFindCounterexample(yVar) == false && return false
-	for arbitraryFixedValue in [1,2,3,4,5,10,10000,1000000]
+	for arbitraryFixedValue in [1, 2, 3, 4, 5, 10, 10000, 1000000]
 		tryFindCounterexample(arbitraryFixedValue) == false && return false
 	end
 
@@ -217,7 +246,9 @@ function isIntersecting(a, b)::Bool
 	return !sympyIsEmpty(a.intersect(b))
 end
 
-function isPosUnlimited(s::Side)::Bool
+function isUnlimited(s::Side, pos::Bool)::Bool
+	s == SSetLit && return isUnlimited(pos ? value(s).L : value(s).R, pos)
+	s == SSetNeg && return isUnlimited(left(s), !pos)
 
 	local xVar = symbols("x", real = true, nonnegative = true)
 	#local yVar = symbols("y")
@@ -229,13 +260,19 @@ function isPosUnlimited(s::Side)::Bool
 
 		# strict divergence
 		res = limit(sideToF(s, xVar + 1), xVar => oo)
-		res == oo && return true
-		res == -oo && return false
+		if pos
+			res == oo && return true
+			res == -oo && return false
+		else
+			res == oo && return false
+			res == -oo && return true
+		end
 	end
 
-	for i in [1000000, big(10)^20, big(10)^1000]
+	for boundary in [1000000, big(10)^20, big(10)^1000]
 		local res = solveset(
-			StrictGreaterThan(sideToF(s, xVar), i),
+			pos ? StrictGreaterThan(sideToF(s, xVar), boundary)
+			: StrictLessThan(sideToF(s, xVar), -boundary),
 			xVar, domain = sympy.S.Naturals)
 		#display(res)
 		local hasI = isIntersecting(sympy.S.Naturals, res)

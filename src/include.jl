@@ -1,3 +1,5 @@
+showDebug = false
+
 
 include("sset.jl")
 include("symbolic.jl")

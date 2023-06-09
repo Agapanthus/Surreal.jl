@@ -34,10 +34,16 @@ false
 > Surreal(-ω, 0)
 -1
 
-> 0 < ϵ < 1
+> 0 < ϵ < 1//8
 true
 
 > ϵ < ω
+true
+
+> -ϵ == -1//2
+false
+
+> isFinite(-ϵ)
 true
 
 

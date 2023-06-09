@@ -28,7 +28,7 @@ function simplify(s::Surreal)
 end
 
 function toR(s::Surreal)
-	@assert isFinite(s)
+	@assert isFiniteStructure(s)
 	local t = toRNaive(simplify(s))
 	denominator(t) == 1 && return numerator(t)
 	t

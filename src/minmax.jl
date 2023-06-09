@@ -29,32 +29,28 @@ function min(x::Surreal, y::Surreal)::Surreal
 	fuzzy
 end
 
-
 function max(x::Side, y::Side)::Side
 	isempty(x) && return y
 	isempty(y) && return x
-	x == SSetLit && y == SSetLit && return Side(max(value(x), value(y)))
 
-	dump(x)
-	dump(y)
+	local r = x <= y
+	r == true && return y
+	r == false && return x
 
-	eh
-	x == y && return x
-
-	@show x
-	@show y
-
+	# they overlap...
+	@show x y
 	todo
 end
 
 function min(x::Side, y::Side)::Side
 	isempty(x) && return y
 	isempty(y) && return x
-	x == SSetLit && y == SSetLit && return Side(min(value(x), value(y)))
-	x == y && return x
+	
+	local r = x <= y
+	r == true && return x
+	r == false && return y
 
-	@show x
-	@show y
-
+	# they overlap...
+	@show x y
 	todo
 end
