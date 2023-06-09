@@ -1,12 +1,9 @@
 
 function Base.:+(x::Side, y::Surreal)::Side
 	isempty(x) && return ∅
-	y == S0 && return x
+	iszero(y) && return x
 	x == SSetLit && return Side(value(x) + y)
-
-	dump(x)
-	dump(y)
-	todo
+	return Side(SSetAdd, x, Side(y))
 end
 Base.:+(x::Surreal, y::Side)::Side = y + x
 

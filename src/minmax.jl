@@ -34,6 +34,11 @@ function max(x::Side, y::Side)::Side
 	isempty(x) && return y
 	isempty(y) && return x
 	x == SSetLit && y == SSetLit && return Side(max(value(x), value(y)))
+
+	dump(x)
+	dump(y)
+
+	eh
 	x == y && return x
 
 	@show x

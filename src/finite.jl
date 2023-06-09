@@ -1,28 +1,24 @@
 
-function finiteSupremum(x::Side)::Bool
-    isempty(x) && return true
-    x == SSetLit && (isNegative(value(x)) || isFinite(value(x))) && return true
-    x == SSetId && return false
-    
-    todo
+function finiteSupremum(s::Side)::Bool
+	isempty(s) && return true
+	s == SSetLit && (isNegative(value(s)) || isFinite(value(s))) && return true
+	s == SSetId && return false
+	return !isPosUnlimited(s)
 end
 
-function finiteInfimum(x::Side)::Bool
-    isempty(x) && return true
-    x == SSetLit && (isPositive(value(x)) || isFinite(value(x))) && return true
-    x == SSetId && return true
-    
-    @show x
-    todo
+function finiteInfimum(s::Side)::Bool
+	isempty(s) && return true
+	s == SSetLit && (isPositive(value(s)) || isFinite(value(s))) && return true
+	s == SSetId && return true
+
+	return !isPosUnlimited(Side(SSetNeg, s))
 end
 
 function isFinite(x::Surreal)::Bool
-    isempty(x) && return true
-    finiteSupremum(x.L) && finiteInfimum(x.R) && return true
-    !finiteSupremum(x.L) && return false
-    !finiteInfimum(x.R) && return false
-
-    todo
+	isempty(x) && return true
+	!finiteSupremum(x.L) && return false
+	!finiteInfimum(x.R) && return false
+    return true
 end
 
 isInfinite(x::Surreal) = !isFinite(x)

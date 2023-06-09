@@ -1,7 +1,7 @@
 import Base.(>=), Base.(==), Base.(<=), Base.(<)
 
 ==(s::Side, t::SSetType) = !isempty(s) && s.x.t == t
-function ==(a::Side, b::Side) 
+function ==(a::Side, b::Side)
 	isempty(a) && isempty(b) && return true
 	(isempty(a) || isempty(b)) && return false
 	a.x.t == b.x.t || return false
@@ -20,6 +20,9 @@ function <(x::Side, y::Surreal)
 		# is it greater than any natural number?
 		isPositive(y) || return false
 		return !isFinite(y)
+	else
+
+		return compareAll(x, y, :le)
 	end
 
 	todo
@@ -27,10 +30,9 @@ end
 
 function <(x::Surreal, y::Side)
 	isempty(y) && return true
+	y == SSetLit && return x < value(y)
 
-	if y == SSetLit
-		return x < value(y)
-	end
+	return compareAll(x, y, :le)
 
 	@show x y
 	todo
@@ -55,9 +57,24 @@ function <=(x::Side, y::Side)
 	isempty(y) && return true
 	x == SSetLit && y == SSetLit && return value(x) <= value(y)
 
+	dump(x)
+	dump(y)
 	todo
 end
 
 >=(x::Side, y::Side) = y <= x
 ==(x::Side, y::Side) = y <= x && x <= y
-<(x::Side, y::Side) = isempty(x) || isempty(y) || (x <= y && !(y <= x))
+
+function <(x::Side, y::Side)
+	# optimized, since used very often
+	isempty(x) && return true
+	isempty(y) && return true
+
+	#dump(x)
+	#dump(y)
+
+	local res = compareAll(x, y)
+	typeof(res) == Bool && return res
+
+	return (x <= y && !(y <= x))
+end

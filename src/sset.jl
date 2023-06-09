@@ -62,6 +62,19 @@ function value(s::Side)::Surreal
 	s.x.v
 end
 
+function left(s::Side)::Side
+	@assert !isnothing(s.x)
+	@assert s != SSetId
+	@assert s != SSetLit
+	Side(s.x.l)
+end
+
+function right(s::Side)::Side
+	@assert !isnothing(s.x)
+	@assert s == SSetAdd || s == SSetMul
+	Side(s.x.r)
+end
+
 Surreal(x, y) = Surreal(Surreal(x), Surreal(y))
 Surreal(x, y::Surreal) = Surreal(Surreal(x), y)
 Surreal(x::Surreal, y) = Surreal(x, Surreal(y))
