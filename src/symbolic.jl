@@ -1,6 +1,7 @@
 using PyCall
 using SymPy
 using Symbolics
+using SymbolicUtils
 using Latexify
 
 # convert Symbolics.jl to sympy
@@ -107,7 +108,7 @@ function containsAnyNatural(x)::Bool
 			z = sympyGetNumeric(x.args[2])
 			# if 1 fits below, that's fine
 			!isnothing(z) && z >= 1 && return true
-		
+
 		elseif t in ["GreaterThan"]
 			local z = sympyGetNumeric(x.args[2])
 			# greater than something is always natural
@@ -169,6 +170,74 @@ function eachLeft(y::Side)::Side
 end
 =#
 
+function applyOp(s, a, b)
+	s == :leq && return a <= b
+	s == :le && return a < b
+	s == :geq && return a >= b
+	s == :ge && return a > b
+	s == :eq && return a == b
+	@assert false op
+end
+
+function surrealToSym(x::Surreal, ss)
+	isFiniteStructure(x) && return toR(x)
+	return ss.S(sideToF2(x.L, ss), sideToF2(x.R, ss))
+end
+
+
+function sideToF2(s::Side, ss)
+	if isempty(s)
+		return ss.∅
+	elseif s == SSetId
+		return ss.n
+	elseif s == SSetAdd
+		return sideToF2(left(s), ss) + sideToF2(right(s), ss)
+	elseif s == SSetMul
+		return sideToF2(left(s), ss) + sideToF2(right(s), ss)
+	elseif s == SSetInv
+		return 1 / sideToF2(left(s), ss)
+	elseif s == SSetNeg
+		return -sideToF2(left(s), ss)
+	elseif s == SSetLit
+		return surrealToSym(value(s), ss)
+	end
+
+	@show s
+	todo
+end
+
+function myProof(x, s, op)
+	# TODO: this should replace all the sympy stuff
+
+	# TODO: don't use Integer, but define operators for surreals
+	SymbolicUtils.@syms n::Integer S(l, r)::Integer ∅ omega epsilon leq(l, r)
+	ss = (n = n, S = S, ∅ = ∅)
+
+	local f = 0
+
+	if typeof(x) == Surreal
+		f = applyOp(op, surrealToSym(x, ss), sideToF2(s, ss))
+	else
+		f = applyOp(op, sideToF2(x, ss), sideToF2(s, ss))
+	end
+
+	local myRules = SymbolicUtils.RestartedChain([
+		@rule S(n, ∅) => omega
+		#@acrule sin(~x)^2  => 1
+	])
+
+	myRules = SymbolicUtils.PassThrough(SymbolicUtils.Prewalk(myRules))
+
+	display(f)
+	local f2 = SymbolicUtils.simplify(f)
+	f2 = myRules(f2)
+	#f2 !== f &&
+	display(f2)
+
+
+end
+
+
 function compareAll(x::Surreal, s::Side, op::Symbol)::Union{Nothing, Bool}
 	# all s compare to x as specified
 
@@ -176,14 +245,18 @@ function compareAll(x::Surreal, s::Side, op::Symbol)::Union{Nothing, Bool}
 
 	isempty(s) && return true
 
-	if !isFiniteStructure(x)
+	myProof(x, s, op)
 
-		#=
+	if !isFiniteStructure(x)
+		if op == :ge && x == ω && structEq(s, Side(SSetId))
+			return true
+		end
+
 		if op == :geq && x == ω && structEq(s, Side(SSetAdd, Side(SSetId), Side(S1)))
 			return true
 		end
-		=#
 
+		#=
 		if op == :le
 			# all x.L < all s
 			#@show x s
@@ -211,7 +284,7 @@ function compareAll(x::Surreal, s::Side, op::Symbol)::Union{Nothing, Bool}
 
 		elseif op == :ge
 			# all x.L < all s
-			
+
 			#= @show x s
 
 			local res = compareAll(s, x.L, :le)
@@ -220,6 +293,7 @@ function compareAll(x::Surreal, s::Side, op::Symbol)::Union{Nothing, Bool}
 
 			todo=#
 		end
+		=#
 
 		@show op x s
 		todo
@@ -290,31 +364,31 @@ function compareAllSympyFallback(x, y, op)
 
 	function tryFindCounterexample(yVar)
 		#try
-			local xVar = symbols("x", real = true, nonnegative = true, integer = true)
-			#local slackVar = symbols("s", real = true, nonnegative = true)
-			local f = GreaterThan(sideToF(x, xVar + 1), sideToF(y, yVar + 1))
-			#local f = Eq(sideToF(x, xVar + 1) - sideToF(y, yVar + 1) + slackVar, 0)
+		local xVar = symbols("x", real = true, nonnegative = true, integer = true)
+		#local slackVar = symbols("s", real = true, nonnegative = true)
+		local f = GreaterThan(sideToF(x, xVar + 1), sideToF(y, yVar + 1))
+		#local f = Eq(sideToF(x, xVar + 1) - sideToF(y, yVar + 1) + slackVar, 0)
 
-			f = sympy.simplify(f)
+		f = sympy.simplify(f)
 
-			# this is always the other way around. stop now.
-			f == true && return false
-			#display(f)
-			if f != false
+		# this is always the other way around. stop now.
+		f == true && return false
+		#display(f)
+		if f != false
 
-				local res = solve(f, xVar)
-				#display(res)
+			local res = solve(f, xVar)
+			#display(res)
 
-				# always satisfied
-				res == true && return false
+			# always satisfied
+			res == true && return false
 
-				containsAnyNatural(res) && return false
+			containsAnyNatural(res) && return false
 
-				#display(res)
-			end
+			#display(res)
+		end
 		#catch err
 		#	@show err
-			# skip due to error
+		# skip due to error
 		#end
 		return nothing
 	end
@@ -333,11 +407,12 @@ function compareAll(x::Side, y::Side, op::Symbol = :le)::Union{Nothing, Bool}
 
 	#@show x y
 
-	@assert op == :le
 	isempty(y) && return true
 	isempty(x) && return true
 
+	myProof(x, y, op)
 
+	@assert op == :le
 	return compareAllSympyFallback(x, y, op)
 end
 
@@ -356,6 +431,8 @@ end
 function isUnlimited(s::Side, pos::Bool)::Bool
 	s == SSetLit && return isUnlimited(pos ? value(s).L : value(s).R, pos)
 	s == SSetNeg && return isUnlimited(left(s), !pos)
+
+	myProof(Side(SSetId), s, :le)
 
 	local xVar = symbols("x", real = true, nonnegative = true)
 	#local yVar = symbols("y")

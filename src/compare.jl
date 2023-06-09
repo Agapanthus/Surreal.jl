@@ -20,6 +20,11 @@ end
 function <(x::Side, y::Surreal) # = isempty(x) || (x <= y && !(y <= x))
 	isempty(x) && return true
 	x == SSetLit && return value(x) < y
+	if x == SSetId
+		# is it greater than any natural number?
+		isPositive(y) || return false
+		return !isFinite(y)
+	end
 	return proofLess(x, y)
 end
 
@@ -64,6 +69,8 @@ function <=(x::Side, y::Side)::Union{Nothing, Bool}
 		res == true && return true
 		res == false && return false
 	end
+
+	compareAll(x, y, :leq)
 
 	@show x y
 	todo
