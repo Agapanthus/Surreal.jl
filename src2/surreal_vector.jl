@@ -46,11 +46,13 @@ lowerUnion(x::T, y::VectorSurrealSet) where {T <: SurrealSet} = lowerUnion([x, y
 lowerUnion(x::VectorSurrealSet, y::VectorSurrealSet) = lowerUnion([x.v..., y.v...])
 lowerUnion(::EmptySurrealSet, ::VectorSurrealSet) = nil
 lowerUnion(::VectorSurrealSet, ::EmptySurrealSet) = nil
+lowerUnion(x::VectorSurrealSet) = lowerUnion(x.v)
 
 upperUnion(x::VectorSurrealSet, y::T) where {T <: SurrealSet} = upperUnion([x.v..., y])
 upperUnion(x::T, y::VectorSurrealSet) where {T <: SurrealSet} = upperUnion([x, y.v...])
 upperUnion(x::VectorSurrealSet, y::VectorSurrealSet) = upperUnion([x.v..., y.v...])
 upperUnion(::EmptySurrealSet, ::VectorSurrealSet) = nil
 upperUnion(::VectorSurrealSet, ::EmptySurrealSet) = nil
+upperUnion(x::VectorSurrealSet) = upperUnion(x.v)
 
 birthday(x::VectorSurrealSet) = maximum(birthday.(x.v))

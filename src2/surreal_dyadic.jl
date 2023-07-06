@@ -90,16 +90,18 @@ function lca(x::MyRational, y::MyRational)::Tuple{MyRational, MyRational}
 	# decrease both denominators simultaneously until reaching 1
 	while true
 		x == y && return x, preLCA
+
+		if denominator(x) == 1 && denominator(y) == 1
+			if abs(numerator(x)) < abs(numerator(y))
+				return x, preLCA == x ? MyRational(numerator(x) + 1, 1) : preLCA
+			else
+				return y, preLCA == y ? MyRational(numerator(y) + 1, 1) : preLCA
+			end
+		end
+
 		preLCA = x
 		denominator(x) > 1 && (x = dyadicParent(x))
 		denominator(y) > 1 && (y = dyadicParent(y))
-		if denominator(x) == 1 && denominator(y) == 1
-			if abs(numerator(x)) < abs(numerator(y))
-				return x, preLCA
-			else
-				return y, preLCA
-			end
-		end
 	end
 end
 
@@ -115,14 +117,15 @@ function toFrac(x::Surreal, check::Bool = true)::MyRational
 		return MyRational(div(numerator(r), denominator(r)) - 1, 1)
 	end
 	if isEmpty(x.R)
-		local l = max(-1, toFrac(maximum(x.L).s, false))
+		@assert lowerUnion([x.L]) isa SingularSurrealSet
+		local l = max(-1, toFrac(lowerUnion([x.L]).s, false))
 		return MyRational(div(numerator(l), denominator(l)) + 1, 1)
 	end
 
-	@assert maximum(x.L) isa SingularSurrealSet
-	@assert maximum(x.R) isa SingularSurrealSet
-	local l = maximum(x.L).s
-	local r = minimum(x.R).s
+	@assert lowerUnion([x.L]) isa SingularSurrealSet
+	@assert upperUnion([x.R]) isa SingularSurrealSet
+	local l = lowerUnion([x.L]).s
+	local r = upperUnion([x.R]).s
 
 	if isNegative(l)
 		# different sides -> zero!
