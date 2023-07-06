@@ -1,31 +1,12 @@
-
-
-abstract type SurrealSet end
-
-autoSurrealSet(x::SurrealSet)::SurrealSet = x
-
-import Base.(<=), Base.(<)
-
-# default implementations
-Base.:(<=)(x::SurrealSet, y::SurrealSet) = @assert false "impl!"
-Base.:(>=)(x::SurrealSet, y::SurrealSet) = y <= x
-Base.:(==)(x::SurrealSet, y::SurrealSet) = y <= x && x <= y
-Base.isequal(x::SurrealSet, y::SurrealSet) = x == y
-Base.:(!=)(x::SurrealSet, y::SurrealSet) = !(x == y)
-Base.:(<)(x::SurrealSet, y::SurrealSet) = @assert false "impl!" 
-Base.isless(x::SurrealSet, y::SurrealSet) = x < y
-Base.:(>)(x::SurrealSet, y::SurrealSet) = y < x
-
-##############
-
 struct Surreal
 	L::SurrealSet
 	R::SurrealSet
 
-	function Surreal(L, R)
+	function Surreal(L, R, check::Bool = true)
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
-		@assert l < r
+		# TODO: make a macro like "@inbounds" to turn this off
+		check && @assert l < r
 		new(l, r)
 	end
 end
@@ -39,60 +20,45 @@ Base.:(<)(x::Surreal, y::Surreal) = x <= y && !(y <= x)
 Base.isless(x::Surreal, y::Surreal) = x < y
 Base.:(>)(x::Surreal, y::Surreal) = y < x
 
-##############
+Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
+isDyadic(x::Surreal) = isDyadic(x.L) && isDyadic(x.R)
 
-struct EmptySurrealSet <: SurrealSet
-	EmptySurrealSet() = new()
-end
-const nil = EmptySurrealSet()
-
-<=(x::EmptySurrealSet, y::EmptySurrealSet) = true
-<(x::EmptySurrealSet, y::EmptySurrealSet) = true
-
-<=(x::SurrealSet, y::EmptySurrealSet) = true
-<(x::SurrealSet, y::EmptySurrealSet) = true
-
-<(x::EmptySurrealSet, y::SurrealSet) = true
-<=(x::EmptySurrealSet, y::SurrealSet) = true
-
-<(x::Surreal, y::EmptySurrealSet) = true
-<=(x::Surreal, y::EmptySurrealSet) = true
-
-<(x::EmptySurrealSet, y::Surreal) = true
-<=(x::EmptySurrealSet, y::Surreal) = true
-
-##############
-
-struct SingularSurrealSet <: SurrealSet
-	s::Surreal
++(x::Surreal, y::Surreal)::Surreal = Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
+-(x::Surreal) = Surreal(-x.R, -x.L)
+-(x::Surreal, y::Surreal)::Surreal = x + (-y)
+*(x::Surreal, y::Surreal)::Surreal = begin
+	local xly = x.L * y
+	local ylx = y.L * x
+	local ll = x.L * y.L
+	local xry = x.R * y
+	local yrx = y.R * x
+	local rr = x.R * y.R
+	local lr = x.L * y.R
+	local rl = x.R * y.L
+	local l = lowerUnion(xly + ylx - ll, xry + yrx - rr)
+	local r = upperUnion(xly + yrx - lr, ylx + xry - rl)
+	Surreal(l, r)
 end
 
-autoSurrealSet(x::Surreal) = SingularSurrealSet(x)
-<=(x::SingularSurrealSet, y::SingularSurrealSet) = x.s <= y.s
-<(x::SingularSurrealSet, y::SingularSurrealSet) = x.s < y.s
-
-<(x::SingularSurrealSet, y::Surreal) = x.s < y
-<(x::Surreal, y::SingularSurrealSet) = x < y.s
-
-##############
-
-struct VectorSurrealSet <: SurrealSet
-	v::Vector{SurrealSet}
+"calculate 1/y for y a dyadic fraction"
+function invDyadic(y::Surreal)::Surreal
+	TODO
 end
 
-autoSurrealSet(v::Vector{T}) where {T} = VectorSurrealSet(autoSurrealSet.(v))
-autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
+"calculate 1/y for any surreal y"
+function inv(y::Surreal)::Surreal
+	@assert y != 0
+	isDyadic(y) && return invDyadic(y)
+	isNegative(y) && (return neg(inv(neg(y))))
 
-<=(x::VectorSurrealSet, y::SurrealSet) = all(v -> v <= y, x.v)
-<=(x::SurrealSet, y::VectorSurrealSet) = all(v -> x <= v, y.v)
-<=(x::VectorSurrealSet, y::EmptySurrealSet) = true
-<=(x::EmptySurrealSet, y::VectorSurrealSet) = true
-<=(x::VectorSurrealSet, y::Surreal) = all(v -> v <= y, x.v)
-<=(x::Surreal, y::VectorSurrealSet) = all(v -> x <= v, y.v)
+	TODO
+	# requires infinite recursion with pattern detection 
+end
 
-<(x::VectorSurrealSet, y::SurrealSet) = all(v -> v < y, x.v)
-<(x::SurrealSet, y::VectorSurrealSet) = all(v -> x < v, y.v)
-<(x::VectorSurrealSet, y::EmptySurrealSet) = true
-<(x::EmptySurrealSet, y::VectorSurrealSet) = true
-<(x::VectorSurrealSet, y::Surreal) = all(v -> v < y, x.v)
-<(x::Surreal, y::VectorSurrealSet) = all(v -> x < v, y.v)
+/(x::Surreal, y::Surreal)::Surreal = x * inv(y)
+
+"strictly negative"
+isNegative(x::Surreal) = x < S0
+
+"strictly positive"
+isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L)
