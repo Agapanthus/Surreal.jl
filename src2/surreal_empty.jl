@@ -18,7 +18,7 @@ end
 <(x::EmptySurrealSet, y::Surreal) = true
 <=(x::EmptySurrealSet, y::Surreal) = true
 
-isEqual(::EmptySurrealSet, ::EmptySurrealSet) = true
+isequal(::EmptySurrealSet, ::EmptySurrealSet) = true
 
 Base.show(io::IO, _::EmptySurrealSet) = print(io, "∅")
 isDyadic(x::EmptySurrealSet) = true

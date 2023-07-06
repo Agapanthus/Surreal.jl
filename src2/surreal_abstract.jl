@@ -3,7 +3,7 @@ abstract type SurrealSet end
 
 autoSurrealSet(x::SurrealSet)::SurrealSet = x
 
-import Base.(<=), Base.(<), Base.(+), Base.(-), Base.(*), Base.(/)
+import Base.(<=), Base.isequal, Base.(<), Base.(+), Base.(-), Base.(*), Base.(/)
 
 # default implementations
 Base.:(<=)(x::SurrealSet, y::SurrealSet) = TODO
@@ -18,7 +18,7 @@ Base.:(>)(x::SurrealSet, y::SurrealSet) = y < x
 
 
 "same representation"
-function Base.isequal(x::SurrealSet, y::SurrealSet)
+function isequal(x::SurrealSet, y::SurrealSet)
 	typeof(x) === typeof(y) || return false
 	@show typeof(x) typeof(y)
 	TODO

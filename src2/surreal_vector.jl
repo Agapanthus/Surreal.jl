@@ -19,7 +19,7 @@ autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
 <(x::VectorSurrealSet, y::Surreal) = all(v -> v < y, x.v)
 <(x::Surreal, y::VectorSurrealSet) = all(v -> x < v, y.v)
 
-isEqual(x::VectorSurrealSet, y::VectorSurrealSet) = length(x.v) == length(y.v) && all(isequal(l, r) for (l, r) in zip(x.v, y.v))
+isequal(x::VectorSurrealSet, y::VectorSurrealSet) = length(x.v) == length(y.v) && all(isequal(l, r) for (l, r) in zip(x.v, y.v))
 
 function Base.show(io::IO, x::VectorSurrealSet)
 	print(io, "{")

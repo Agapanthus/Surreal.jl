@@ -9,7 +9,7 @@ autoSurrealSet(x::Surreal) = SingularSurrealSet(x)
 <(x::SingularSurrealSet, y::Surreal) = x.s < y
 <(x::Surreal, y::SingularSurrealSet) = x < y.s
 
-isEqual(x::SingularSurrealSet, y::SingularSurrealSet) = isEqual(x.s, y.s)
+isequal(x::SingularSurrealSet, y::SingularSurrealSet) = isequal(x.s, y.s)
 
 function Base.show(io::IO, x::SingularSurrealSet)
 	if isDyadic(x.s)

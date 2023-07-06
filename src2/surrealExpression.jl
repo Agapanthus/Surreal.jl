@@ -26,26 +26,6 @@ abstract type SurrealExpression end
 
 const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
 
-#=
-"representation equality"
-function Base.isequal(x::SubSe, y::SubSe)
-	x === y && return true
-	# see https://github.com/JuliaSymbolics/SymbolicUtils.jl/blob/e4519eb267f16082839c13e8817bd9afa2ff3e2c/src/types.jl#L29
-
-	local E = exprtype(x)
-	exprtype(x) == exprtype(y) || return false
-	if E == SymbolicUtils.TERM
-        a = arguments(x)
-        b = arguments(y)
-		return isequal(operation(x), operation(y)) && 
-			length(a) == length(b) &&
-            all(isequal(l, r) for (l, r) in zip(a, b))
-	else
-		return x.name == y.name
-	end
-end
-=#
-
 function Base.show(io::IO, e::SubSe)
 	local E = exprtype(e)
 	if E == SymbolicUtils.TERM
@@ -151,7 +131,8 @@ prepareChain(cas) = x -> SymbolicUtils.simplify(x;
 
 additionRules = [
 	@rule add_s(X_s(~x::(x -> isZeroFast(x))), ~y) => ~y
-	@rule add_s(~y, X_s(~x::(x -> isZeroFast(x)))) => ~y
+	#@rule add_s(~y, X_s(~x::(x -> isZeroFast(x)))) => ~y
+	
 	#  @rule add(~x, S(∅, ∅)) => ~x
 	#  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
 
