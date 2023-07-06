@@ -1,5 +1,9 @@
 const MyRational = Rational{Int64}
 
+
+autoSurrealSet(n::Int64) = SingularSurrealSet(Surreal(n))
+autoSurrealSet(x::MyRational) = SingularSurrealSet(Surreal(x))
+
 function Surreal(n::Int64)
 	if n == 0
 		return S0
@@ -45,7 +49,7 @@ function Surreal(x::MyRational)
 	if x == MyRational(0)
 		return S0
 	elseif x < 0
-		return -(Surreal(-x), false)
+		return -(Surreal(-x))
 	end
 
 	# natural number
@@ -122,7 +126,7 @@ function toFrac(x::Surreal, check::Bool = true)::MyRational
 
 	if isNegative(l)
 		# different sides -> zero!
-		isPositive(r) && return S0
+		isPositive(r) && return 0
 
 		# TODO: don't recurse with (-), but do this directly for efficiency
 		# both non-positive:

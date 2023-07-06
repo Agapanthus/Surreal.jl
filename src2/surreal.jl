@@ -6,7 +6,7 @@ struct Surreal
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
 		# TODO: make a macro like "@inbounds" to turn this off
-		check && @assert l < r
+		check && @assert l < r "rule 1: l < r violated by $(l) an $(r)"
 		new(l, r)
 	end
 end
@@ -62,3 +62,20 @@ isNegative(x::Surreal) = x < S0
 
 "strictly positive"
 isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L)
+
+"convert to the first representation generated for this number"
+function simplify(x::Surreal)
+	if isDyadic(x)
+		# TODO: is there a more efficient way to do this?
+		return Surreal(toFrac(x))
+	else
+		TODO
+	end
+end
+
+"birthday of this representation (not the representant of the equivalence group)"
+birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1
+
+Base.length(x::Surreal) = 1
+Base.iterate(x::Surreal) = (x, nothing)
+Base.iterate(x::Surreal, ::Nothing) = nothing

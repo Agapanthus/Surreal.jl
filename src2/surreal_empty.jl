@@ -44,3 +44,5 @@ lowerUnion(x::EmptySurrealSet, y::EmptySurrealSet) = nil
 upperUnion(x::EmptySurrealSet, y::EmptySurrealSet) = nil
 
 isEmpty(x::SurrealSet) = typeof(x) == EmptySurrealSet
+
+birthday(x::EmptySurrealSet) = -1
