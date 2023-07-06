@@ -9,6 +9,8 @@ autoSurrealSet(x::Surreal) = SingularSurrealSet(x)
 <(x::SingularSurrealSet, y::Surreal) = x.s < y
 <(x::Surreal, y::SingularSurrealSet) = x < y.s
 
+isEqual(x::SingularSurrealSet, y::SingularSurrealSet) = isEqual(x.s, y.s)
+
 function Base.show(io::IO, x::SingularSurrealSet)
 	if isDyadic(x.s)
 		local f = toFrac(x.s)
@@ -37,7 +39,7 @@ isDyadic(x::SingularSurrealSet) = isDyadic(x.s)
 lowerUnion(x::SingularSurrealSet, y::SingularSurrealSet) = max(x, y)
 upperUnion(x::SingularSurrealSet, y::SingularSurrealSet) = min(x, y)
 
-maximum(x::SingularSurrealSet) = x
-minimum(x::SingularSurrealSet) = x
-
 birthday(x::SingularSurrealSet) = birthday(x.s)
+
+hasFiniteUpperLimit(x::SingularSurrealSet) = isFinite(x.s)
+hasFiniteLowerLimit(x::SingularSurrealSet) = isFinite(x.s)

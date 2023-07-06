@@ -13,14 +13,22 @@ end
 
 <=(x::Surreal, y::Surreal) = x.L < y && x < y.R
 Base.:(>=)(x::Surreal, y::Surreal) = y <= x
-Base.:(==)(x::Surreal, y::Surreal) = y <= x && x <= y
-Base.isequal(x::Surreal, y::Surreal) = x == y
-Base.:(!=)(x::Surreal, y::Surreal) = !(x == y)
+"same equivalence class"
+equiv(x::Surreal, y::Surreal) = y <= x && x <= y
+⊜(x::Surreal, y::Surreal) = equiv(x, y)
 Base.:(<)(x::Surreal, y::Surreal) = x <= y && !(y <= x)
 Base.isless(x::Surreal, y::Surreal) = x < y
 Base.:(>)(x::Surreal, y::Surreal) = y < x
 
+"same representation"
+Base.:(==)(x::Surreal, y::Surreal) = isequal(x, y)
+"same representation"
+Base.isequal(x::Surreal, y::Surreal) = typeof(x.L) === typeof(y.L) && typeof(x.R) === typeof(y.R) && isequal(x.L, y.L) && isequal(x.R, y.R)
+Base.:(!=)(x::Surreal, y::Surreal) = !isequal(x, y)
+
 Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
+
+"whether it is a finite representation of dyadic fraction. A simplify could transform a representation to a finite dyadic"
 isDyadic(x::Surreal) = isDyadic(x.L) && isDyadic(x.R)
 
 +(x::Surreal, y::Surreal)::Surreal = Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
@@ -63,6 +71,18 @@ isNegative(x::Surreal) = x < S0
 "strictly positive"
 isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L)
 
+# TODO: make this more efficient
+isZero(x::Surreal) = equiv(x, 0)
+
+isZeroFast(x::Surreal) = x.L == nil && x.R == nil
+
+function isFinite(x::Surreal)
+	isDyadic(x) && return true
+	return hasFiniteUpperLimit(x.L) && hasFiniteLowerLimit(x.R)
+end
+
+isInfinite(x::Surreal) = !isFinite(x)
+
 "convert to the first representation generated for this number"
 function simplify(x::Surreal)
 	if isDyadic(x)
@@ -79,3 +99,4 @@ birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1
 Base.length(x::Surreal) = 1
 Base.iterate(x::Surreal) = (x, nothing)
 Base.iterate(x::Surreal, ::Nothing) = nothing
+

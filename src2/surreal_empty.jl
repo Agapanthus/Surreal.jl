@@ -18,6 +18,8 @@ end
 <(x::EmptySurrealSet, y::Surreal) = true
 <=(x::EmptySurrealSet, y::Surreal) = true
 
+isEqual(::EmptySurrealSet, ::EmptySurrealSet) = true
+
 Base.show(io::IO, _::EmptySurrealSet) = print(io, "∅")
 isDyadic(x::EmptySurrealSet) = true
 
@@ -43,6 +45,10 @@ lowerUnion(x::EmptySurrealSet, y::EmptySurrealSet) = nil
 (upperUnion(x::T, y::EmptySurrealSet)::T) where {T <: SurrealSet} = x
 upperUnion(x::EmptySurrealSet, y::EmptySurrealSet) = nil
 
-isEmpty(x::SurrealSet) = typeof(x) == EmptySurrealSet
+isEmpty(x::SurrealSet) = typeof(x) === EmptySurrealSet
+
 
 birthday(x::EmptySurrealSet) = -1
+
+hasFiniteUpperLimit(::EmptySurrealSet) = true
+hasFiniteLowerLimit(::EmptySurrealSet) = true

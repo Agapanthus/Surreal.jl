@@ -113,7 +113,7 @@ function toFrac(x::Surreal, check::Bool = true)::MyRational
 
 	if isEmpty(x.L)
 		isEmpty(x.R) && return MyRational(0)
-		local r = min(1, toFrac(minimum(x.R).s, false))
+		local r = min(1, toFrac(upperUnion([x.R]).s, false))
 		return MyRational(div(numerator(r), denominator(r)) - 1, 1)
 	end
 	if isEmpty(x.R)
