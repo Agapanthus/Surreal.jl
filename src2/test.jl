@@ -3,6 +3,10 @@ function runTests()
 	@assert Surreal(0) ⊜ S0
 	@assert Surreal(10) > Surreal(1) > Surreal(0) > Surreal(-1 // 2) > Surreal(-1)
 
+	@assert simplify(Surreal([1, 2], [3, 4])) == Surreal(2, 3)
+	@assert simplify(Surreal([1, 2], [3, 4])) != Surreal(2, [3, 4])
+	@assert simplify(Surreal([1, 2], [3, 4])) ⊜ Surreal(2, [3, 4])
+
 	@assert all(f -> toFrac(Surreal(f)) == f, [1 // 2, 1 // 8, 3 // 4, 1 // 1, 4 // 1, -4 // 1, 0 // 1, 13311 // 32])
 	@assert all(f -> toFrac(Surreal(f)) == f, [n // 32 for n in -10:40])
 
@@ -48,6 +52,9 @@ function runTests()
 	@assert lca(41 // 8, 6 // 1) == (6 // 1, 11 // 2)
 	@assert lca(-41 // 8, -6 // 1) == (-6 // 1, -11 // 2)
 	@assert lca(1 // 1, 4 // 1) == (1 // 1, 2 // 1)
+
+	@assert (Surreal(add_s(X_s(Surreal(0)), X_s(Surreal(1))), nil) |> simplify) == Surreal(2)
+	@assert simplify(Surreal([1, 2, [3, 4]], 5)) == Surreal(4, 5)
 
 end
 

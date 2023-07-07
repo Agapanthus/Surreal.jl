@@ -43,3 +43,5 @@ birthday(x::SingularSurrealSet) = birthday(x.s)
 
 hasFiniteUpperLimit(x::SingularSurrealSet) = isFinite(x.s)
 hasFiniteLowerLimit(x::SingularSurrealSet) = isFinite(x.s)
+
+simplify(x::SingularSurrealSet, ::Bool) = simplify(x.s)

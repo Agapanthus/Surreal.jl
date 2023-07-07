@@ -1,7 +1,7 @@
 struct Surreal
 	L::SurrealSet
 	R::SurrealSet
-
+	
 	function Surreal(L, R, check::Bool = true)
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
@@ -30,6 +30,18 @@ Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
 
 "whether it is a finite representation of dyadic fraction. A simplify could transform a representation to a finite dyadic"
 isDyadic(x::Surreal) = isDyadic(x.L) && isDyadic(x.R)
+
+"convert to the first representation generated for this number"
+function simplify(x::Surreal)
+	x = Surreal(simplify(x.L, false), simplify(x.R, true))
+
+	# TODO: that's inefficient
+	isDyadic(x) && return Surreal(toFrac(x))
+
+	# TODO: more?
+	return x
+end
+
 
 +(x::Surreal, y::Surreal)::Surreal = Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
 -(x::Surreal) = Surreal(-x.R, -x.L)
@@ -72,9 +84,9 @@ isNegative(x::Surreal) = x < S0
 isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L)
 
 # TODO: make this more efficient
-isZero(x::Surreal) = equiv(x, 0)
+isZero(x::Surreal) = equiv(x, S0)
 
-isZeroFast(x::Surreal) = x.L == nil && x.R == nil
+isZeroFast(x::Surreal) = isDyadic(x) && toFrac(x) == 0 #x.L == nil && x.R == nil
 
 function isFinite(x::Surreal)
 	isDyadic(x) && return true
@@ -83,16 +95,6 @@ end
 
 isInfinite(x::Surreal) = !isFinite(x)
 
-"convert to the first representation generated for this number"
-function simplify(x::Surreal)
-	if isDyadic(x)
-		# TODO: is there a more efficient way to do this?
-		return Surreal(toFrac(x))
-	else
-		TODO
-	end
-end
-
 "birthday of this representation (not the representant of the equivalence group)"
 birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1
 
@@ -100,3 +102,11 @@ Base.length(x::Surreal) = 1
 Base.iterate(x::Surreal) = (x, nothing)
 Base.iterate(x::Surreal, ::Nothing) = nothing
 
+"true if it is omega, false if not sure"
+function isOmegaFast(x::Surreal)
+	x == omega && return true
+	isInfinite(x) || return false
+	#isPositive(x) || return false
+
+	return false
+end

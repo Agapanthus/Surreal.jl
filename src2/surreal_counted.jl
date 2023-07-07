@@ -34,6 +34,11 @@ isDyadic(x::CountedSurrealSet) = false
 hasFiniteUpperLimit(x::CountedSurrealSet) = hasFiniteUpperLimit(x.e)
 hasFiniteLowerLimit(x::CountedSurrealSet) = hasFiniteLowerLimit(x.e)
 
+function simplify(x::CountedSurrealSet, upper::Bool)
+	local res = CountedSurrealSet(simplifyRewriter(x.e))
+	isSurreal(res.e) && return SingularSurrealSet(arg1(res.e))
+	return res
+end
 
 -(x::CountedSurrealSet) = CountedSurrealSet(neg_s(x.e))
 

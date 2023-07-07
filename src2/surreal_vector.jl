@@ -11,6 +11,7 @@ autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
 <=(x::EmptySurrealSet, y::VectorSurrealSet) = true
 <=(x::VectorSurrealSet, y::Surreal) = all(v -> v <= y, x.v)
 <=(x::Surreal, y::VectorSurrealSet) = all(v -> x <= v, y.v)
+<=(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> vv <= v, x.v), y.v)
 
 <(x::VectorSurrealSet, y::SurrealSet) = all(v -> v < y, x.v)
 <(x::SurrealSet, y::VectorSurrealSet) = all(v -> x < v, y.v)
@@ -18,6 +19,7 @@ autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
 <(x::EmptySurrealSet, y::VectorSurrealSet) = true
 <(x::VectorSurrealSet, y::Surreal) = all(v -> v < y, x.v)
 <(x::Surreal, y::VectorSurrealSet) = all(v -> x < v, y.v)
+<(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> vv < v, x.v), y.v)
 
 isequal(x::VectorSurrealSet, y::VectorSurrealSet) = length(x.v) == length(y.v) && all(isequal(l, r) for (l, r) in zip(x.v, y.v))
 
@@ -58,3 +60,5 @@ upperUnion(::VectorSurrealSet, ::EmptySurrealSet) = nil
 upperUnion(x::VectorSurrealSet) = upperUnion(x.v)
 
 birthday(x::VectorSurrealSet) = maximum(birthday.(x.v))
+
+simplify(x::VectorSurrealSet, upper::Bool) = upper ? simplify(upperUnion(x.v), upper) : simplify(lowerUnion(x.v), upper)

@@ -52,3 +52,5 @@ birthday(x::EmptySurrealSet) = -1
 
 hasFiniteUpperLimit(::EmptySurrealSet) = true
 hasFiniteLowerLimit(::EmptySurrealSet) = true
+
+simplify(::EmptySurrealSet, ::Bool) = nil

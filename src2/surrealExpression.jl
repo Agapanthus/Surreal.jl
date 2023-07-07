@@ -1,5 +1,5 @@
-using Symbolics
-using SymbolicUtils: SymbolicUtils, Symbolic, nameof, symtype, exprtype, operation, arguments
+#using Symbolics
+using SymbolicUtils: SymbolicUtils, Symbolic, @syms, @rule, nameof, symtype, exprtype, operation, arguments
 
 
 
@@ -11,6 +11,7 @@ abstract type SurrealExpression end
 
 # symbolic expression n
 @syms n_s::SurrealExpression
+@syms omega_s::SurrealExpression
 
 # TODO: Use optimized add / mul structures from package https://symbolicutils.juliasymbolics.org/api/
 @syms add_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
@@ -26,9 +27,18 @@ abstract type SurrealExpression end
 
 const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
 
+isTerm(e::SubSe) = exprtype(e)== SymbolicUtils.TERM
+isSym(e::SubSe) = exprtype(e)== SymbolicUtils.SYM
+
+isSurreal(e::SubSe) = isTerm(e) && operation(e) == X_s
+function arg1(e::SubSe) 
+	@assert isTerm(e) 
+	@assert length(arguments(e)) >= 1
+	return arguments(e)[1]
+end
+
 function Base.show(io::IO, e::SubSe)
-	local E = exprtype(e)
-	if E == SymbolicUtils.TERM
+	if isTerm(e)
 		if operation(e) == add_s
 			print(io, arguments(e)[1], "+", arguments(e)[2])
 		elseif operation(e) == mul_s
@@ -47,21 +57,23 @@ function Base.show(io::IO, e::SubSe)
 			@show operation(e)
 			TODO
 		end
-	elseif E == SymbolicUtils.SYM
+	elseif isSym(e)
 		if nameof(e) == :n_s
 			print(io, "n")
+		elseif nameof(e) == :omega_s
+			print(io, "ω")
 		else
 			@show nameof(e)
 			TODO
 		end
 	else
-		@show E
+		@show exprtype(e)
 		TODO
 	end
 end
 
 function isFinite(e::SubSe)::Bool
-	if istree(e)
+	if isTerm(e)
 		if operation(e) == add_s
 			local f1 = isFinite(arguments(e)[1])
 			local f2 = isFinite(arguments(e)[2])
@@ -79,19 +91,23 @@ function isFinite(e::SubSe)::Bool
 			@show operation(e)
 			TODO
 		end
-	else
+	elseif isSym(e)
 		if nameof(e) == :n_s
+			return false
+		elseif nameof(e) == :omega_s
 			return false
 		else
 			@show nameof(e)
 			TODO
 		end
+	else
+		TODO
 	end
 
 end
 
 function hasFiniteUpperLimit(e::SubSe)
-	if istree(e)
+	if isTerm(e)
 		if operation(e) == add_s
 			local f1 = isFinite(arguments(e)[1])
 			local f2 = isFinite(arguments(e)[2])
@@ -109,13 +125,17 @@ function hasFiniteUpperLimit(e::SubSe)
 			@show operation(e)
 			TODO
 		end
-	else
+	elseif isSym(e)
 		if nameof(e) == :n_s
+			return false
+		elseif nameof(e) == :omega_s
 			return false
 		else
 			@show nameof(e)
 			TODO
 		end
+	else
+		TODO
 	end
 end
 
@@ -129,10 +149,25 @@ prepareChain(cas) = x -> SymbolicUtils.simplify(x;
 				SymbolicUtils.Prewalk),
 )
 
+function showMeError(f)
+	return x -> try
+		return f(x)
+	catch err
+		showerror(stdout, err)
+		display(stacktrace(catch_backtrace()))
+	end
+end
+
+simplificationRules = [
+	@rule X_s(~x) => X_s(simplify(~x))
+]
+
 additionRules = [
-	@rule add_s(X_s(~x::(x -> isZeroFast(x))), ~y) => ~y
-	#@rule add_s(~y, X_s(~x::(x -> isZeroFast(x)))) => ~y
-	
+	@rule add_s(X_s(~x::isZeroFast), ~y) => ~y
+	@rule add_s(~y, X_s(~x::isZeroFast)) => ~y
+
+	@rule add_s(X_s(~x), X_s(~y)) => X_s(~x + ~y)
+
 	#  @rule add(~x, S(∅, ∅)) => ~x
 	#  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
 
@@ -141,9 +176,40 @@ additionRules = [
 	# @rule (S(~XL, ~XR) ⊕ S(~YL, ~YR)) =>  S(maxUnion(add(~XL, S(~YL, ~YR)), add(~YL, S(~XL, ~XR))), minUnion(add(~XR, S(~YL, ~YR)), add(~YR, S(~XL, ~XR))))
 ]
 
+luRules = [
+	#@rule lu_s(add_s(n_s, X_s(~x::(isFinite))), ) =>
+
+	# ignore finite additions to infinite stuff
+	@rule lu_s(add_s(n_s, X_s(~x::isFinite)), ~y) => lu_s(n_s, ~y)
+	@rule lu_s(add_s(X_s(~x::isFinite), n_s), ~y) => lu_s(n_s, ~y)
+	@rule lu_s(~y, add_s(n_s, X_s(~x::isFinite))) => lu_s(n_s, ~y)
+	@rule lu_s(~y, add_s(X_s(~x::isFinite), n_s)) => lu_s(n_s, ~y)
+
+	# ignore adding smaller stuff (TODO: how to use acrule here?)
+	@rule lu_s(n_s, X_s(~x::isInfinite)) => X_s(~x)
+	
+	# same on both sides is irrelevant
+	@rule lu_s(~x, ~x) => ~x
+
+]
+
+omegaRules = [
+	@rule X_s(~x::showMeError(isOmegaFast)) => omega_s
+
+]
+
 
 luRewriter = prepareChain(vcat(
+	simplificationRules...,
 	additionRules...,
+	luRules...,
+	omegaRules...,
+))
+
+simplifyRewriter = prepareChain(vcat(
+	simplificationRules...,
+	additionRules...,
+	omegaRules...,
 ))
 
 
