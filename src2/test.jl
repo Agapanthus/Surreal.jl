@@ -56,6 +56,8 @@ function runTests()
 	@assert (Surreal(add_s(X_s(Surreal(0)), X_s(Surreal(1))), nil) |> simplify) == Surreal(2)
 	@assert simplify(Surreal([1, 2, [3, 4]], 5)) == Surreal(4, 5)
 
+	@assert Surreal(1) + omega == omega + Surreal(1)
+	@assert simplify(Surreal(0) + omega ) == omega
 end
 
 @time runTests()
