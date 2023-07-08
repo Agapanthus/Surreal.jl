@@ -28,10 +28,6 @@ function createRewriters()
     ]
     
     additionRules = [
-        @rule (~x::sc(isZeroFast) + ~y) => ~y
-        @rule (~y + ~x::sc(isZeroFast)) => ~y
-    
-        @rule ~x::se(isSurreal) + ~y::se(isSurreal) => ~x + ~y
     
         #  @rule add(~x, S(∅, ∅)) => ~x
         #  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
