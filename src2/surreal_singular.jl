@@ -32,5 +32,6 @@ isDyadic(x::SingularSurrealSet) = isDyadic(x.s)
 birthday(x::SingularSurrealSet) = birthday(x.s)
 simplify(x::SingularSurrealSet, ::Bool) = simplify(x.s)
 
-hasFiniteUpperLimit(x::SingularSurrealSet) = isFinite(x.s)
-hasFiniteLowerLimit(x::SingularSurrealSet) = isFinite(x.s)
+hasUpperLimit(x::SingularSurrealSet) = isFinite(x.s)
+hasLowerLimit(x::SingularSurrealSet) = isFinite(x.s)
+isLimited(x::SingularSurrealSet) = isFinite(x.s)

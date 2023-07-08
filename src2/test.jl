@@ -1,20 +1,20 @@
 
 function runTests()
-	@assert Surreal(0) ⊜ S0
-	@assert Surreal(10) > Surreal(1) > Surreal(0) > Surreal(-1 // 2) > Surreal(-1)
+	@assert Surreal(0) ≅ S0
+	@assert omega > Surreal(10) > Surreal(1) > Surreal(0) > Surreal(-1 // 2) > Surreal(-1) > -omega
 
-	@assert simplify(Surreal([1, 2], [3, 4])) == Surreal(2, 3)
-	@assert simplify(Surreal([1, 2], [3, 4])) != Surreal(2, [3, 4])
-	@assert simplify(Surreal([1, 2], [3, 4])) ⊜ Surreal(2, [3, 4])
+	@assert simplify(Surreal([1, 2], [3, 4])) ⊜ Surreal(2, 3)
+	@assert simplify(Surreal([1, 2], [3, 4])) ⦷ Surreal(2, [3, 4])
+	@assert simplify(Surreal([1, 2], [3, 4])) ≅ Surreal(2, [3, 4])
 
 	@assert all(f -> toFrac(Surreal(f)) == f, [1 // 2, 1 // 8, 3 // 4, 1 // 1, 4 // 1, -4 // 1, 0 // 1, 13311 // 32])
 	@assert all(f -> toFrac(Surreal(f)) == f, [n // 32 for n in -10:40])
 
-	@assert all(x -> Surreal(x, nil) ⊜ Surreal(x + 1) ⊜ Surreal(x) + Surreal(1), 0:4)
+	@assert all(x -> Surreal(x, nil) ≅ Surreal(x + 1) ≅ Surreal(x) + Surreal(1), 0:4)
 
-	@assert Surreal([2, 3], nil) + Surreal(3) ⊜ Surreal(7)
-	@assert Surreal([2, [2, 3]], nil) + Surreal(3) ⊜ Surreal(7)
-	@assert Surreal([2, [[[3]]]], nil) + Surreal([2, 1], nil) ⊜ Surreal(7)
+	@assert Surreal([2, 3], nil) + Surreal(3) ≅ Surreal(7)
+	@assert Surreal([2, [2, 3]], nil) + Surreal(3) ≅ Surreal(7)
+	@assert Surreal([2, [[[3]]]], nil) + Surreal([2, 1], nil) ≅ Surreal(7)
 
 	for (s, r) in [
 		(Surreal(1 // 4, 1), 1 // 2),
@@ -27,9 +27,9 @@ function runTests()
 		(Surreal(Surreal(1 // 128), nil), 1),
 		(Surreal(3) - Surreal(5) + Surreal(1 // 2), -3 // 2),
 	]
-		@assert s ⊜ Surreal(r) (s, r)
+		@assert s ≅ Surreal(r) (s, r)
 		@assert toFrac(s) == r (s, r)
-		@assert simplify(s) ⊜ s (s, r)
+		@assert simplify(s) ≅ s (s, r)
 	end
 
 	local randDyads(n, x = 5, y = 5) = Set([MyRational(rand(-x:x), rand([2^k for k in 0:y])) for _ in 1:n])
@@ -43,7 +43,7 @@ function runTests()
 	end
 
 	for x in randDyads(5, 2, 3), y in randDyads(5, 2, 3), z in randDyads(5, 2, 3)
-		@assert Surreal(y) + Surreal(x) ⊜ Surreal(x) + Surreal(y)
+		@assert Surreal(y) + Surreal(x) ≅ Surreal(x) + Surreal(y)
 		local s0 = (Surreal(x) + Surreal(y)) + Surreal(z)
 		local s1 = Surreal(x) + (Surreal(y) + Surreal(z))
 		@assert toFrac(s0) == toFrac(s1)
@@ -54,10 +54,18 @@ function runTests()
 	@assert lca(1 // 1, 4 // 1) == (1 // 1, 2 // 1)
 
 	@assert (Surreal(add_s(X_s(Surreal(0)), X_s(Surreal(1))), nil) |> simplify) == Surreal(2)
-	@assert simplify(Surreal([1, 2, [3, 4]], 5)) == Surreal(4, 5)
+	@assert simplify(Surreal([1, 2, [3, 4]], 5)) ⊜ Surreal(4, 5)
 
-	@assert Surreal(1) + omega == omega + Surreal(1)
-	@assert simplify(Surreal(0) + omega ) == omega
+	@assert Surreal(1) + omega ⊜ omega + Surreal(1)
+	@assert simplify(Surreal(0) + omega) ⊜ omega
+
+	for n in [Surreal(0), Surreal(4), Surreal(3 // 8), Surreal(-1 // 8)]
+		@assert isFinite(n)
+	end
+
+	for n in [omega, omega + Surreal(3), -omega]
+		@assert isInfinite(n)
+	end
 end
 
 @time runTests()

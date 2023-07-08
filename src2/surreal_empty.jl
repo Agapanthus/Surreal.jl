@@ -29,7 +29,7 @@ isEmpty(x::SurrealSet) = typeof(x) === EmptySurrealSet
 
 birthday(x::EmptySurrealSet) = -1
 
-hasFiniteUpperLimit(::EmptySurrealSet) = true
-hasFiniteLowerLimit(::EmptySurrealSet) = true
+hasUpperLimit(::EmptySurrealSet) = true
+hasLowerLimit(::EmptySurrealSet) = true
 
 simplify(::EmptySurrealSet, ::Bool) = nil

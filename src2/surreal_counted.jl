@@ -7,26 +7,36 @@ autoSurrealSet(x::SubSe) = CountedSurrealSet(x)
 
 <=(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
 <(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
-function <(x::CountedSurrealSet, y::Surreal)
-	if isInfinite(x) && isFinite(y)
-		return isNegative(x)
-	end
 
-	@show x.e == add_s(n_s, X_s(S0))
-	@show add_s(n_s, X_s(S0))
+function <(x::CountedSurrealSet, y::Surreal)
+	local hul = hasUpperLimit(x)
+	!hul && (isNegative(y) || isFinite(y)) && return false
+	hul && isPositive(y) && isInfinite(y) && return true
+	
+	# risk of infinite recursion
+	# getLUB(x) < y && return true
+
 	@show x y
 	TODO
 end
-<(x::Surreal, y::CountedSurrealSet) = TODO
+
+function <(x::Surreal, y::CountedSurrealSet)
+	local hll = hasLowerLimit(y)
+	!hll && (isPositive(x) || isFinite(x)) && return false
+	hll && isNegative(x) && isInfinite(x) && return true
+
+	@show x y
+	TODO
+end
 
 isequal(x::CountedSurrealSet, y::CountedSurrealSet) = isequal(x.e, y.e)
 Base.show(io::IO, x::CountedSurrealSet) = print(io, x.e)
 isDyadic(x::CountedSurrealSet) = false
 
 for f in [
-	:isFinite,
-	:hasFiniteUpperLimit,
-	:hasFiniteLowerLimit,
+	:isLimited,
+	:hasUpperLimit,
+	:hasLowerLimit,
 	:birthday,
 ]
 	eval(quote
@@ -36,7 +46,7 @@ end
 
 function simplify(x::CountedSurrealSet, upper::Bool)
 	local res = CountedSurrealSet(simplifyRewriter(x.e))
-	isSurreal(res.e) && return SingularSurrealSet(arg1(res.e))
+	isSurreal(res.e) && return SingularSurrealSet(left(res.e))
 	return res
 end
 
@@ -49,8 +59,8 @@ end
 *(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(mul_s(x.e, y.e))
 
 @commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = lowerUnion(x, CountedSurrealSet(X_s(y.s)))
-lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(luRewriter(lu_s(x.e, y.e)))
+lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.e)))
 
-@commu upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = upperUnion(x, CountedSurrealSet(X_s(y.s)))
-upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(luRewriter(uu_s(x.e, y.e)))
+@commu upperUnion(x::CountedSurrealSet, y::SingularSurrealSet) = upperUnion(x, CountedSurrealSet(X_s(y.s)))
+upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(uu_s(x.e, y.e)))
 

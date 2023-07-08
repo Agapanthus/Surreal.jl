@@ -15,18 +15,30 @@ end
 
 <=(x::Surreal, y::Surreal) = x.L < y && x < y.R
 Base.:(>=)(x::Surreal, y::Surreal) = y <= x
-"same equivalence class"
-equiv(x::Surreal, y::Surreal) = y <= x && x <= y
-⊜(x::Surreal, y::Surreal) = equiv(x, y)
 Base.:(<)(x::Surreal, y::Surreal) = x <= y && !(y <= x)
 Base.isless(x::Surreal, y::Surreal) = x < y
 Base.:(>)(x::Surreal, y::Surreal) = y < x
 
-"same representation"
-Base.:(==)(x::Surreal, y::Surreal) = isequal(x, y)
+"same equivalence class"
+equiv(x::Surreal, y::Surreal) = y <= x && x <= y
+"same equivalence class"
+≅(x::Surreal, y::Surreal) = equiv(x, y)
+"not same equivalence class"
+≇(x::Surreal, y::Surreal) = !(x ≅ y)
+
+Base.:(==)(x::Surreal, y) = @assert false "use equiv or isequal"
+Base.:(==)(x, y::Surreal) = @assert false "use equiv or isequal"
+Base.:(==)(x::Surreal, y::Surreal) = isequal(x, y) # @assert false "use equiv or isequal" 
+Base.:(!=)(x::Surreal, y) = @assert false "use equiv or isequal"
+Base.:(!=)(x, y::Surreal) = @assert false "use equiv or isequal"
+Base.:(!=)(x::Surreal, y::Surreal) = @assert false "use equiv or isequal" # !isequal(x, y)
+
 "same representation"
 Base.isequal(x::Surreal, y::Surreal) = typeof(x.L) === typeof(y.L) && typeof(x.R) === typeof(y.R) && isequal(x.L, y.L) && isequal(x.R, y.R)
-Base.:(!=)(x::Surreal, y::Surreal) = !isequal(x, y)
+"same representation"
+⊜(x::Surreal, y::Surreal) = isequal(x, y)
+"not same representation"
+⦷(x::Surreal, y::Surreal) = !(x ⊜ y)
 
 Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
 
@@ -62,6 +74,13 @@ end
 	Surreal(l, r)
 end
 
+for f in [:+, :*, :-, :<, :<=, :equiv]
+	eval(quote
+		@passDownType Surreal Int64 Surreal false ($f(x, y) = $f(x, y))
+		@passDownType Surreal MyRational Surreal false ($f(x, y) = $f(x, y))
+	end)
+end
+
 "calculate 1/y for y a dyadic fraction"
 function invDyadic(y::Surreal)::Surreal
 	TODO
@@ -92,9 +111,8 @@ isZeroFast(x::Surreal) = isDyadic(x) && toFrac(x) == 0 #x.L == nil && x.R == nil
 
 function isFinite(x::Surreal)
 	isDyadic(x) && return true
-	return hasFiniteUpperLimit(x.L) && hasFiniteLowerLimit(x.R)
+	return (isPositive(x) && hasUpperLimit(x.L)) || (isNegative(x) && hasLowerLimit(x.R))
 end
-
 isInfinite(x::Surreal) = !isFinite(x)
 
 "birthday of this representation (not the representant of the equivalence group)"
@@ -112,3 +130,13 @@ function isOmegaFast(x::Surreal)
 
 	return false
 end
+
+"true if it is -omega, false if not sure"
+function isMinusOmegaFast(x::Surreal)
+	x == -omega && return true
+	isInfinite(x) || return false
+	#isNegative(x) || return false
+
+	return false
+end
+
