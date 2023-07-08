@@ -1,7 +1,7 @@
 struct Surreal
 	L::SurrealSet
 	R::SurrealSet
-	
+
 	function Surreal(L, R, check::Bool = true)
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
@@ -10,6 +10,8 @@ struct Surreal
 		new(l, r)
 	end
 end
+
+@inline Surreal(x::Surreal) = x
 
 <=(x::Surreal, y::Surreal) = x.L < y && x < y.R
 Base.:(>=)(x::Surreal, y::Surreal) = y <= x

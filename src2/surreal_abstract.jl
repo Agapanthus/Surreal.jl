@@ -34,3 +34,7 @@ Base.:(==)(x::SurrealSet, y::SurrealSet) = isequal(x, y)
 
 
 (isInfinite(x::T)::Bool) where {T <: SurrealSet} = !isFinite(x)
+
+@inline Base.length(::SurrealSet) = 1
+@inline Base.iterate(x::SurrealSet) = (x, nothing)
+@inline Base.iterate(x::SurrealSet, ::Nothing) = nothing

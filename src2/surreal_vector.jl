@@ -5,21 +5,13 @@ end
 autoSurrealSet(v::Vector{T}) where {T} = VectorSurrealSet(autoSurrealSet.(v))
 autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
 
-<=(x::VectorSurrealSet, y::SurrealSet) = all(v -> v <= y, x.v)
-<=(x::SurrealSet, y::VectorSurrealSet) = all(v -> x <= v, y.v)
-<=(x::VectorSurrealSet, y::EmptySurrealSet) = true
-<=(x::EmptySurrealSet, y::VectorSurrealSet) = true
-<=(x::VectorSurrealSet, y::Surreal) = all(v -> v <= y, x.v)
-<=(x::Surreal, y::VectorSurrealSet) = all(v -> x <= v, y.v)
-<=(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> vv <= v, x.v), y.v)
-
-<(x::VectorSurrealSet, y::SurrealSet) = all(v -> v < y, x.v)
-<(x::SurrealSet, y::VectorSurrealSet) = all(v -> x < v, y.v)
-<(x::VectorSurrealSet, y::EmptySurrealSet) = true
-<(x::EmptySurrealSet, y::VectorSurrealSet) = true
-<(x::VectorSurrealSet, y::Surreal) = all(v -> v < y, x.v)
-<(x::Surreal, y::VectorSurrealSet) = all(v -> x < v, y.v)
-<(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> vv < v, x.v), y.v)
+for f in [:<, :<=], T2 in [SurrealSet, Surreal]
+	eval(quote
+		@passDownType (x -> x.v) VectorSurrealSet ($T2) false ($f(x, y) = all(($f).(x, y)))
+		@commu $f(x::VectorSurrealSet, y::EmptySurrealSet) = true
+		$f(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> $f(vv, v), x.v), y.v)
+	end)
+end
 
 isequal(x::VectorSurrealSet, y::VectorSurrealSet) = length(x.v) == length(y.v) && all(isequal(l, r) for (l, r) in zip(x.v, y.v))
 
@@ -34,31 +26,19 @@ isDyadic(x::VectorSurrealSet) = all(isDyadic, x.v)
 
 -(x::VectorSurrealSet) = VectorSurrealSet(.-x.v)
 
-+(x::VectorSurrealSet, y::Surreal) = VectorSurrealSet(x.v .+ y)
-+(x::Surreal, y::VectorSurrealSet) = VectorSurrealSet(x .+ y.v)
-+(x::VectorSurrealSet, y::VectorSurrealSet) = TODO
+for f in [:+, :*]
+	eval(quote
+		@passDownType (x -> x.v) VectorSurrealSet Surreal true ($f(x, y) = VectorSurrealSet(vec([$f(a, b) for a in x, b in y])))
+	end)
+end
 
-*(x::VectorSurrealSet, y::Surreal) = VectorSurrealSet(x.v .* y)
-*(x::Surreal, y::VectorSurrealSet) = VectorSurrealSet(x .* y.v)
-*(x::VectorSurrealSet, y::VectorSurrealSet) = TODO
-
-#maximum(x::VectorSurrealSet) = maximum(x.v)
-#minimum(x::VectorSurrealSet) = minimum(x.v)
-
-lowerUnion(x::VectorSurrealSet, y::T) where {T <: SurrealSet} = lowerUnion([x.v..., y])
-lowerUnion(x::T, y::VectorSurrealSet) where {T <: SurrealSet} = lowerUnion([x, y.v...])
-lowerUnion(x::VectorSurrealSet, y::VectorSurrealSet) = lowerUnion([x.v..., y.v...])
-lowerUnion(::EmptySurrealSet, ::VectorSurrealSet) = nil
-lowerUnion(::VectorSurrealSet, ::EmptySurrealSet) = nil
-lowerUnion(x::VectorSurrealSet) = lowerUnion(x.v)
-
-upperUnion(x::VectorSurrealSet, y::T) where {T <: SurrealSet} = upperUnion([x.v..., y])
-upperUnion(x::T, y::VectorSurrealSet) where {T <: SurrealSet} = upperUnion([x, y.v...])
-upperUnion(x::VectorSurrealSet, y::VectorSurrealSet) = upperUnion([x.v..., y.v...])
-upperUnion(::EmptySurrealSet, ::VectorSurrealSet) = nil
-upperUnion(::VectorSurrealSet, ::EmptySurrealSet) = nil
-upperUnion(x::VectorSurrealSet) = upperUnion(x.v)
+for f in [:lowerUnion, :upperUnion]
+	eval(quote
+		@passDownType (x -> x.v) VectorSurrealSet SurrealSet true ($f(x, y) = $f([x..., y...]))
+		@commu $f(::EmptySurrealSet, ::VectorSurrealSet) = nil
+		$f(x::VectorSurrealSet) = $f(x.v)
+	end)
+end
 
 birthday(x::VectorSurrealSet) = maximum(birthday.(x.v))
-
 simplify(x::VectorSurrealSet, upper::Bool) = upper ? simplify(upperUnion(x.v), upper) : simplify(lowerUnion(x.v), upper)

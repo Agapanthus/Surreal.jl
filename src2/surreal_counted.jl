@@ -3,10 +3,6 @@ struct CountedSurrealSet <: SurrealSet
 	e::SubSe
 end
 
-
-"first countable infinity"
-const omega = Surreal(CountedSurrealSet(n_s), nil)
-
 autoSurrealSet(x::SubSe) = CountedSurrealSet(x)
 
 <=(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
@@ -24,15 +20,19 @@ end
 <(x::Surreal, y::CountedSurrealSet) = TODO
 
 isequal(x::CountedSurrealSet, y::CountedSurrealSet) = isequal(x.e, y.e)
-
 Base.show(io::IO, x::CountedSurrealSet) = print(io, x.e)
-
-isFinite(x::CountedSurrealSet)::Bool = isFinite(x.e)
-
 isDyadic(x::CountedSurrealSet) = false
 
-hasFiniteUpperLimit(x::CountedSurrealSet) = hasFiniteUpperLimit(x.e)
-hasFiniteLowerLimit(x::CountedSurrealSet) = hasFiniteLowerLimit(x.e)
+for f in [
+	:isFinite,
+	:hasFiniteUpperLimit,
+	:hasFiniteLowerLimit,
+	:birthday,
+]
+	eval(quote
+		$f(x::CountedSurrealSet) = $f(x.e)
+	end)
+end
 
 function simplify(x::CountedSurrealSet, upper::Bool)
 	local res = CountedSurrealSet(simplifyRewriter(x.e))
@@ -42,22 +42,15 @@ end
 
 -(x::CountedSurrealSet) = CountedSurrealSet(neg_s(x.e))
 
-+(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(add_s(x.e, X_s(y)))
-+(x::Surreal, y::CountedSurrealSet) = y + x
-+(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
+@commu +(x::CountedSurrealSet, y::Surreal) = x + CountedSurrealSet(X_s(y))
++(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(add_s(x.e, y.e))
 
-*(x::CountedSurrealSet, y::Surreal) = TODO
-*(x::Surreal, y::CountedSurrealSet) = TODO
-*(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
+@commu *(x::CountedSurrealSet, y::Surreal) = x * CountedSurrealSet(X_s(y))
+*(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(mul_s(x.e, y.e))
 
-lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = lowerUnion(x, CountedSurrealSet(X_s(y.s)))
-lowerUnion(x::SingularSurrealSet, y::CountedSurrealSet) = lowerUnion(y, x)
-function lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet)
-	return CountedSurrealSet(luRewriter(lu_s(x.e, y.e)))
-end
+@commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = lowerUnion(x, CountedSurrealSet(X_s(y.s)))
+lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(luRewriter(lu_s(x.e, y.e)))
 
-upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = upperUnion(x, CountedSurrealSet(X_s(y.s)))
-upperUnion(x::SingularSurrealSet, y::CountedSurrealSet) = upperUnion(y, x)
-upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = TODO
+@commu upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = upperUnion(x, CountedSurrealSet(X_s(y.s)))
+upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(luRewriter(uu_s(x.e, y.e)))
 
-birthday(x::CountedSurrealSet) = TODO

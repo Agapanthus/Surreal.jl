@@ -1,3 +1,4 @@
+include("rule.jl")
 
 include("surreal_abstract.jl")
 include("surreal.jl")
