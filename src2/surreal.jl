@@ -1,3 +1,4 @@
+
 struct Surreal
 	L::SurrealSet
 	R::SurrealSet
@@ -45,7 +46,20 @@ Base.isequal(x::Surreal, y::Surreal) = typeof(x.L) === typeof(y.L) && typeof(x.R
 ⦷(x::Surreal, y) = @assert false "wrong type"
 ⦷(x, y::Surreal) = @assert false "wrong type"
 
-Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
+show2(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
+
+function Base.show(io::IO, x::Surreal)
+	if isDyadic(x)
+		local f = toFrac(x)
+		if denominator(f) == 1
+			print(io, numerator(f))
+		else
+			print(io, numerator(f), "/", denominator(f))
+		end
+	else
+		show2(io, x)
+	end
+end
 
 "whether it is a finite representation of dyadic fraction. A simplify could transform a representation to a finite dyadic"
 isDyadic(x::Surreal) = isDyadic(x.L) && isDyadic(x.R)
@@ -63,6 +77,7 @@ end
 
 
 +(x::Surreal, y::Surreal)::Surreal = Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
++(x::Surreal) = x
 -(x::Surreal) = Surreal(-x.R, -x.L)
 -(x::Surreal, y::Surreal)::Surreal = x + (-y)
 *(x::Surreal, y::Surreal)::Surreal = begin

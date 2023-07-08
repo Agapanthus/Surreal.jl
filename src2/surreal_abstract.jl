@@ -1,3 +1,4 @@
+const MyRational = Rational{Int64}
 
 abstract type SurrealSet end
 

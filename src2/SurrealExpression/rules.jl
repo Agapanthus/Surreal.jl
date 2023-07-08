@@ -18,10 +18,10 @@ function createRewriters()
     ]
     
     additionRules = [
-        @rule add_s(X_s(~x::se(isZeroFast)), ~y) => ~y
-        @rule add_s(~y, X_s(~x::se(isZeroFast))) => ~y
+        @rule (X_s(~x::se(isZeroFast)) + ~y) => ~y
+        @rule (~y + X_s(~x::se(isZeroFast))) => ~y
     
-        @rule add_s(X_s(~x), X_s(~y)) => X_s(~x + ~y)
+        @rule X_s(~x) + X_s(~y) => X_s(~x + ~y)
     
         #  @rule add(~x, S(∅, ∅)) => ~x
         #  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
@@ -32,17 +32,16 @@ function createRewriters()
     ]
     
     luRules = [
-        #@rule lu_s(add_s(n_s, X_s(~x::(isFinite))), ) =>
-    
+   
         # ignore finite additions to infinite stuff
-        @rule lu_s(add_s(n_s, X_s(~x::se(isFinite))), ~y) => lu_s(n_s, ~y)
-        @rule lu_s(add_s(X_s(~x::se(isFinite)), n_s), ~y) => lu_s(n_s, ~y)
-        @rule lu_s(~y, add_s(n_s, X_s(~x::se(isFinite)))) => lu_s(n_s, ~y)
-        @rule lu_s(~y, add_s(X_s(~x::se(isFinite)), n_s)) => lu_s(n_s, ~y)
+        @rule lu_s(n_s + X_s(~x::se(isFinite)), ~y) => lu_s(n_s, ~y)
+        @rule lu_s(X_s(~x::se(isFinite))+ n_s, ~y) => lu_s(n_s, ~y)
+        @rule lu_s(~y, n_s + X_s(~x::se(isFinite))) => lu_s(n_s, ~y)
+        @rule lu_s(~y, X_s(~x::se(isFinite)) + n_s) => lu_s(n_s, ~y)
     
         # ignore merging smaller stuff (TODO: how to use acrule here?)
         @rule lu_s(n_s, X_s(~x::se(isInfinite))) => X_s(~x)
-        #@rule lu_s(neg_s(n_s), X_s(~x::se(isInfinite))) => X_s(~x)
+        #@rule lu_s(-n_s, X_s(~x::se(isInfinite))) => X_s(~x)
 
         # same on both sides is irrelevant
         @rule lu_s(~x, ~x) => ~x
@@ -50,17 +49,8 @@ function createRewriters()
     ]
 
     uuRules = [
-        #@rule lu_s(add_s(n_s, X_s(~x::(isFinite))), ) =>
-    
-        # ignore finite additions to infinite stuff
-        @rule uu_s(add_s(n_s, X_s(~x::se(isFinite))), ~y) => uu_s(n_s, ~y)
-        @rule uu_s(add_s(X_s(~x::se(isFinite)), n_s), ~y) => uu_s(n_s, ~y)
-        @rule uu_s(~y, add_s(n_s, X_s(~x::se(isFinite)))) => uu_s(n_s, ~y)
-        @rule uu_s(~y, add_s(X_s(~x::se(isFinite)), n_s)) => uu_s(n_s, ~y)
-    
         # ignore merging smaller stuff (TODO: how to use acrule here?)
-        #@rule uu_s(n_s, X_s(~x::se(isInfinite))) => X_s(~x)
-        @rule uu_s(neg_s(n_s), X_s(~x::se(isInfinite))) => X_s(~x)
+        @rule uu_s(-n_s, X_s(~x::se(isInfinite))) => X_s(~x)
 
         # same on both sides is irrelevant
         @rule uu_s(~x, ~x) => ~x
@@ -69,8 +59,7 @@ function createRewriters()
     
     omegaRules = [
         @rule X_s(~x::se(isOmegaFast)) => omega_s
-        @rule X_s(~x::se(isMinusOmegaFast)) => neg_s(omega_s)
-    
+        @rule X_s(~x::se(isMinusOmegaFast)) => -omega_s
     ]
 
     prepareChain(cas) = x -> SymbolicUtils.simplify(x;
@@ -81,14 +70,14 @@ function createRewriters()
     )
 
     simplifyRewriter = prepareChain(vcat(
-        simplificationRules...,
-        additionRules...,
-        luRules...,
-        uuRules...,
+       # simplificationRules...,
+       # additionRules...,
+       # luRules...,
+       # uuRules...,
         omegaRules...,
     ))
 
     simplifyRewriter
 end
 
-#simplifyRewriter = createRewriters()
+simplifyRewriter = createRewriters()

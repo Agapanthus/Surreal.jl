@@ -8,18 +8,7 @@ autoSurrealSet(x::Surreal) = SingularSurrealSet(x)
 
 isequal(x::SingularSurrealSet, y::SingularSurrealSet) = isequal(x.s, y.s)
 
-function Base.show(io::IO, x::SingularSurrealSet)
-	if isDyadic(x.s)
-		local f = toFrac(x.s)
-		if denominator(f) == 1
-			print(io, numerator(f))
-		else
-			print(io, f)
-		end
-	else
-		print(io, x.s)
-	end
-end
+Base.show(io::IO, x::SingularSurrealSet) = print(io, x.s)
 
 -(x::SingularSurrealSet) = SingularSurrealSet(-x.s)
 @passDownType (x -> x.s) SingularSurrealSet Surreal true (+(x, y) = SingularSurrealSet(x + y))

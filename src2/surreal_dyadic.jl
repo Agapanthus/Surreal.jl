@@ -1,6 +1,3 @@
-const MyRational = Rational{Int64}
-
-
 autoSurrealSet(n::Int64) = SingularSurrealSet(Surreal(n))
 autoSurrealSet(x::MyRational) = SingularSurrealSet(Surreal(x))
 

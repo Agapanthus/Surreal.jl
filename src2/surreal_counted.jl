@@ -53,10 +53,10 @@ end
 -(x::CountedSurrealSet) = CountedSurrealSet(neg_s(x.e))
 
 @commu +(x::CountedSurrealSet, y::Surreal) = x + CountedSurrealSet(X_s(y))
-+(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(add_s(x.e, y.e))
++(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e + y.e)
 
 @commu *(x::CountedSurrealSet, y::Surreal) = x * CountedSurrealSet(X_s(y))
-*(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(mul_s(x.e, y.e))
+*(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e * y.e)
 
 @commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = lowerUnion(x, CountedSurrealSet(X_s(y.s)))
 lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.e)))

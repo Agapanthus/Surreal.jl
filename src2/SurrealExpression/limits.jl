@@ -7,7 +7,7 @@ function getLUB(e::SubSe)::Surreal
 	@match typeofSubSe(e) begin
 		:n_s => return omega
 		:omega_s => return omega
-		:neg_s => -getGLB(left(e))
+		#:neg_s => -getGLB(left(e))
 		:X_s => return left(e)
 		_ => @assert false typeofSubSe(e)
 	end
@@ -18,16 +18,18 @@ function getGLB(e::SubSe)::Surreal
 	@match typeofSubSe(e) begin
 		:n_s => return Surreal(1) # 1 is considered the smallest n
 		:omega_s => return omega
-		:neg_s => -getLUB(left(e))
+		#:neg_s => -getLUB(left(e))
 		:X_s => return left(e)
 		_ => @assert false typeofSubSe(e)
 	end
 end
 
+
 "true, iff there is a finite number larger or equal to every element in e"
 function hasUpperLimit(e::SubSe)
 	@match typeofSubSe(e) begin
-		:add_s => begin
+		# TODO
+		#=:add_s => begin
 			local fu1 = hasUpperLimit(left(e))
 			local fu2 = hasUpperLimit(right(e))
 			# exactly one unlimited: definitely no limit
@@ -45,7 +47,14 @@ function hasUpperLimit(e::SubSe)
 
 			TODO
 		end
-		:neg_s => return hasLowerLimit(left(e))
+		#:neg_s => return hasLowerLimit(left(e))
+		=#
+		:add => begin
+			for arg in arguments(e)
+
+			end
+			return true
+		end
 		:X_s => return isNegative(left(e)) || isFinite(left(e))
 		:n_s => return false
 		:omega_s => return false
@@ -57,6 +66,7 @@ end
 "true, iff there is a finite number smaller than every element in e"
 function hasLowerLimit(e::SubSe)
 	@match typeofSubSe(e) begin
+		# TODO
 		:add_s => begin
 			local fl1 = hasLowerLimit(left(e))
 			local fl2 = hasLowerLimit(right(e))
@@ -75,7 +85,7 @@ function hasLowerLimit(e::SubSe)
 
 			TODO
 		end
-		:neg_s => return hasUpperLimit(left(e))
+		#:neg_s => return hasUpperLimit(left(e))
 		:X_s => return isPositive(left(e)) || isFinite(left(e))
 		:n_s => return true
 		:omega_s => return true
@@ -86,7 +96,7 @@ end
 "true, iff the set contains finite elements"
 function hasFiniteElements(e::SubSe)
 	@match typeofSubSe(e) begin
-		:neg_s => return hasFiniteElements(left(e))
+		#:neg_s => return hasFiniteElements(left(e))
 		:X_s => return isFinite(left(e))
 		:n_s => return true
 		:omega_s => return false
