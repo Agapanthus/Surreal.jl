@@ -13,16 +13,17 @@ for T in [EmptySurrealSet, SurrealSet, Surreal]
 end
 
 isequal(::EmptySurrealSet, ::EmptySurrealSet) = true
+Base.show(io::IO, ::EmptySurrealSet) = print(io, "∅")
+isDyadic(::EmptySurrealSet) = true
+-(::EmptySurrealSet) = nil
 
-Base.show(io::IO, _::EmptySurrealSet) = print(io, "∅")
-isDyadic(x::EmptySurrealSet) = true
-
--(x::EmptySurrealSet) = nil
-
-@commu (lowerUnion(x::EmptySurrealSet, y::T)::T) where {T <: SurrealSet} = y
-lowerUnion(::EmptySurrealSet, ::EmptySurrealSet) = nil
-@commu (upperUnion(x::EmptySurrealSet, y::T)::T) where {T <: SurrealSet} = y
-upperUnion(::EmptySurrealSet, ::EmptySurrealSet) = nil
+for f in [:lowerUnion, :upperUnion]
+	eval(quote
+		# this is commutative, i.e., it always returns the SurrealSet and not the empty one
+		@commu $f(x::EmptySurrealSet, y::SurrealSet) = y
+		$f(::EmptySurrealSet, ::EmptySurrealSet) = nil
+	end)
+end
 
 isEmpty(x::SurrealSet) = typeof(x) === EmptySurrealSet
 

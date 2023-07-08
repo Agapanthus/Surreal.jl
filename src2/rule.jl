@@ -9,34 +9,22 @@ function commuInnerCheck(e)
 	return name, arg1, arg2
 end
 
+"""
+generates an additional
+
+f(y::S, x::T) = f(x, y)
+
+for your f(x::T, y::S), i.e., uses commutativity.
+"""
 macro commu(f)
 	@assert f.head == :(=)
-
-	if f.args[1].head == :where
-		# with where block
-		local wBody, wHead = f.args[1].args
-
-		# skip function return type annotation
-		if wBody.head == :(::)
-			wBody = wBody.args[1]
+	# without where block
+	local name, arg1, arg2 = commuInnerCheck(f.args[1])
+	return quote
+		@inline function $(esc(name))($arg2, $arg1)
+			$name($(arg1.args[1]), $(arg2.args[1]))
 		end
-
-		local name, arg1, arg2 = commuInnerCheck(wBody)
-		return quote
-			@inline function $(esc(name))($(esc(arg2)), $(esc(arg1))) where $(esc(wHead))
-				$name($(esc(arg1.args[1])), $(esc(arg2.args[1])))
-			end
-			$(esc(f))
-		end
-	else
-		# without where block
-		local name, arg1, arg2 = commuInnerCheck(f.args[1])
-		return quote
-			@inline function $(esc(name))($arg2, $arg1)
-				$name($(arg1.args[1]), $(arg2.args[1]))
-			end
-			$(esc(f))
-		end
+		$(esc(f))
 	end
 end
 
