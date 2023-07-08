@@ -50,8 +50,8 @@ function hasUpperLimit(e::SubSe)
 		#:neg_s => return hasLowerLimit(left(e))
 		=#
 		:add => begin
-			for arg in arguments(e)
-
+			for arg in iterateAdd(e)
+				@show arg
 			end
 			return true
 		end

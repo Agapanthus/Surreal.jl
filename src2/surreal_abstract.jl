@@ -4,8 +4,6 @@ abstract type SurrealSet end
 
 autoSurrealSet(x::SurrealSet)::SurrealSet = x
 
-import Base.(<=), Base.isequal, Base.(<), Base.(+), Base.(-), Base.(*), Base.(/)
-
 # default implementations
 Base.:(<=)(x::SurrealSet, y::SurrealSet) = TODO
 Base.:(>=)(x::SurrealSet, y::SurrealSet) = y <= x

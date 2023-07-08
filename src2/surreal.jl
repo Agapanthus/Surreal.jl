@@ -127,7 +127,8 @@ isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L
 # TODO: make this more efficient
 isZero(x::Surreal) = equiv(x, S0)
 
-isZeroFast(x::Surreal) = isDyadic(x) && toFrac(x) == 0 #x.L == nil && x.R == nil
+isZeroFast(x::Surreal) = isDyadic(x) && toFrac(x) == 0
+isOneFast(x::Surreal) = isDyadic(x) && toFrac(x) == 1
 
 function isFinite(x::Surreal)
 	isDyadic(x) && return true

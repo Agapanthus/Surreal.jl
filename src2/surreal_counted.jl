@@ -12,7 +12,7 @@ function <(x::CountedSurrealSet, y::Surreal)
 	local hul = hasUpperLimit(x)
 	!hul && (isNegative(y) || isFinite(y)) && return false
 	hul && isPositive(y) && isInfinite(y) && return true
-	
+
 	# risk of infinite recursion
 	# getLUB(x) < y && return true
 

@@ -2,6 +2,8 @@ using Match
 
 include("rule.jl")
 
+import Base.(<=), Base.isequal, Base.(<), Base.(^), Base.(+), Base.(-), Base.(*), Base.(/)
+
 include("surreal_abstract.jl")
 include("surreal.jl")
 include("surreal_empty.jl")

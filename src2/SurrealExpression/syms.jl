@@ -16,6 +16,7 @@ SymbolicUtils.:(<ₑ)(a::Surreal, b::Symbolic) = true
 @syms uu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 
 SymbolicUtils.zero(::Surreal) = S0
+SymbolicUtils.one(::Surreal) = S1
 
 const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
 
@@ -43,11 +44,33 @@ isSurreal(e::SubSe) = isTerm(e) && operation(e) == X_s
 	end
 end
 
-function printFactor(io::IO, a, forceSign::Bool = false)
-	@assert operation(a) == *
-	local v = arguments(a)[1]
-	local factor = arguments(a)[2]
-	@assert !(factor == S0)
+
+function iterateAdd(e)
+	local res = Vector{Tuple{Surreal, SubSe}}()
+	local a = arguments(e)
+
+	function getFactor(e)
+		@assert operation(e) == *
+		local args = arguments(e)
+		@assert length(args) == 2
+		local v, factor = args
+		@assert factor isa Surreal
+		@assert !(factor == S0)
+		factor, v
+	end
+
+	if a[1] isa Surreal
+		push!(res, (S1, X_s(a[1])))
+	else
+		push!(res, getFactor(a[1]))
+	end
+	for arg in a[2:end]
+		push!(res, getFactor(arg))
+	end
+	res
+end
+
+function printFactor(io::IO, factor, v, forceSign::Bool = false)
 	if factor == S1
 		forceSign && print(io, "+")
 		print(io, v)
@@ -63,14 +86,8 @@ function Base.show(io::IO, e::SubSe)
 	@match typeofSubSe(e) begin
 		:add => begin
 			print(io, "(")
-			local a = arguments(e)
-			if a[1] isa Surreal
-				print(io, a[1])
-			else
-				printFactor(io, a[1])
-			end
-			for arg in a[2:end]
-				printFactor(io, arg, true)
+			for (i, arg) in enumerate(iterateAdd(e))
+				printFactor(io, arg..., i > 1)
 			end
 			print(io, ")")
 		end

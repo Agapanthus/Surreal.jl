@@ -14,7 +14,7 @@ function makeadd(sign, coeff::Surreal, xs...)
 			symUtil_merge!(+, d, x.dict, filter = _iszero)
 			continue
 		end
-		
+
 		if x isa Surreal
 			coeff += x
 			continue
@@ -40,6 +40,9 @@ function makeadd(sign, coeff::Surreal, xs...)
 end
 
 _iszero(x) = x isa Surreal && isZeroFast(x)
+_isone(x) = x isa Surreal && isOneFast(x)
+SymbolicUtils._iszero(x::Surreal) = _iszero(x)
+SymbolicUtils._isone(x::Surreal) = _isone(x)
 
 function +(a::SubSe, b::SubSe)
 	if isadd(a) && isadd(b)
@@ -86,3 +89,26 @@ for f in [:+, :*, :-, :/], T in [Integer, MyRational]
 		$f(a::SubSe, b::$T) = $f(a, Surreal(b))
 	end)
 end
+
+
+
+###
+### Pow
+###
+
+function ^(a::SubSe, b::Surreal)
+	if b isa Number && iszero(b)
+		# fast path
+		1
+	elseif b isa Number && b < 0
+		Div(S1, a^(-b))
+	elseif ismul(a) && b isa Number
+		coeff = SymbolicUtils.unstable_pow(a.coeff, b)
+		Mul(SurrealExpression, coeff, mapvalues((k, v) -> b * v, a.dict))
+	else
+		Pow(a, b)
+	end
+end
+
+^(a::Surreal, b::SubSe) = Pow(a, b)
+^(a::SubSe, b::Integer) = a^Surreal(b)
