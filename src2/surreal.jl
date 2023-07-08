@@ -40,6 +40,11 @@ Base.isequal(x::Surreal, y::Surreal) = typeof(x.L) === typeof(y.L) && typeof(x.R
 "not same representation"
 ⦷(x::Surreal, y::Surreal) = !(x ⊜ y)
 
+⊜(x::Surreal, y) = @assert false "wrong type"
+⊜(x, y::Surreal) = @assert false "wrong type"
+⦷(x::Surreal, y) = @assert false "wrong type"
+⦷(x, y::Surreal) = @assert false "wrong type"
+
 Base.show(io::IO, x::Surreal) = print(io, "(", x.L, "|", x.R, ")")
 
 "whether it is a finite representation of dyadic fraction. A simplify could transform a representation to a finite dyadic"
@@ -74,7 +79,7 @@ end
 	Surreal(l, r)
 end
 
-for f in [:+, :*, :-, :<, :<=, :equiv]
+for f in [:+, :*, :-, :<, :<=, :≅, :≇, :equiv]
 	eval(quote
 		@passDownType Surreal Int64 Surreal false ($f(x, y) = $f(x, y))
 		@passDownType Surreal MyRational Surreal false ($f(x, y) = $f(x, y))

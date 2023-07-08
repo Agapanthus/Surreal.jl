@@ -1,6 +1,6 @@
 
 function runTests()
-	@assert Surreal(0) ≅ S0
+	@assert 0 ≅ S0
 	@assert omega > Surreal(10) > Surreal(1) > Surreal(0) > Surreal(-1 // 2) > Surreal(-1) > -omega
 
 	@assert simplify(Surreal([1, 2], [3, 4])) ⊜ Surreal(2, 3)
