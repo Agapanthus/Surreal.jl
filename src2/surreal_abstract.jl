@@ -1,5 +1,5 @@
 const MyRational = Rational{Int64}
-
+abstract type SurrealExpression end
 abstract type SurrealSet end
 
 autoSurrealSet(x::SurrealSet)::SurrealSet = x

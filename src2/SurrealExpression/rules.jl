@@ -70,10 +70,10 @@ function createRewriters()
     )
 
     simplifyRewriter = prepareChain(vcat(
-       # simplificationRules...,
-       # additionRules...,
-       # luRules...,
-       # uuRules...,
+        simplificationRules...,
+        additionRules...,
+        luRules...,
+        uuRules...,
         omegaRules...,
     ))
 

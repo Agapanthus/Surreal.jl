@@ -1,5 +1,5 @@
 
-struct Surreal
+struct Surreal <: SurrealExpression
 	L::SurrealSet
 	R::SurrealSet
 

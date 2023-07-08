@@ -1,4 +1,3 @@
-abstract type SurrealExpression end
 
 SymbolicUtils.:(<ₑ)(a::SurrealExpression, b::Surreal) = false
 SymbolicUtils.:(<ₑ)(a::Surreal, b::SurrealExpression) = true
@@ -9,16 +8,56 @@ SymbolicUtils.:(<ₑ)(a::Surreal, b::Symbolic) = true
 @syms n_s::SurrealExpression
 @syms omega_s::SurrealExpression
 
+# TODO: remove X_s
 @syms X_s(x::Surreal)::SurrealExpression
 
 # lower union 
 @syms lu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 @syms uu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 
+const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
 SymbolicUtils.zero(::Surreal) = S0
 SymbolicUtils.one(::Surreal) = S1
 
-const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
+function SymbolicUtils.similarterm(t::SubSe, f, args, symtype; metadata = nothing)
+
+	# TODO: copied from types.jl, must adjust this!
+
+	if f isa Symbol
+		error("$f must not be a Symbol")
+	end
+	T = symtype
+
+	if (f in (+, *)) || (f in (/, ^, lu_s, uu_s) && length(args) == 2)
+		res = f(args...)
+		if res isa Symbolic
+			SymbolicUtils.@set! res.metadata = metadata
+		end
+		return res
+	end
+
+
+	@show t f args symtype
+	TODO
+
+	#=
+	if T === nothing
+		T = _promote_symtype(f, args)
+	end
+	if T <: SymbolicUtils.LiteralReal
+		SymbolicUtils.Term{T}(f, args, metadata=metadata)
+	elseif symtype <: Number && (f in (+, *) || (f in (/, ^) && length(args) == 2)) && all(x->symtype(x) <: Number, args)
+		res = f(args...)
+		if res isa Symbolic
+			SymbolicUtils.@set! res.metadata = metadata
+		end
+		return res
+	else
+		SymbolicUtils.Term{T}(f, args, metadata=metadata)
+	end
+	=#
+end
+
 
 isTerm(e::SubSe) = exprtype(e) == SymbolicUtils.TERM
 isSym(e::SubSe) = exprtype(e) == SymbolicUtils.SYM
@@ -50,13 +89,17 @@ function iterateAdd(e)
 	local a = arguments(e)
 
 	function getFactor(e)
-		@assert operation(e) == *
-		local args = arguments(e)
-		@assert length(args) == 2
-		local v, factor = args
-		@assert factor isa Surreal
-		@assert !(factor == S0)
-		factor, v
+		if isTerm(e) && operation(e) == *
+			local args = arguments(e)
+			@assert length(args) == 2
+			local v, factor = args
+			@assert factor isa Surreal
+			@assert !(factor == S0)
+			factor, v
+		else
+			@assert typeof(e) == SubSe
+			S1, e
+		end
 	end
 
 	if a[1] isa Surreal

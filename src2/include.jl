@@ -14,7 +14,7 @@ include("surreal_dyadic.jl")
 #using Symbolics
 using SymbolicUtils: SymbolicUtils, Symbolic, @syms, @rule
 using SymbolicUtils: nameof, symtype, exprtype, operation, arguments
-using SymbolicUtils: Add, Mul, Pow, Div, isadd, ismul, _merge as symUtil_merge, mapvalues
+using SymbolicUtils: Add, Mul, Pow, Div, isadd, isdiv, ismul, _merge as symUtil_merge, mapvalues
 
 include("SurrealExpression/syms.jl")
 include("SurrealExpression/build.jl")
