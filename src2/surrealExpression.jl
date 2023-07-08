@@ -1,5 +1,3 @@
-#using Symbolics
-using SymbolicUtils: SymbolicUtils, Symbolic, @syms, @rule, nameof, symtype, exprtype, operation, arguments
 
 
 
@@ -27,8 +25,8 @@ abstract type SurrealExpression end
 
 const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
 
-isTerm(e::SubSe) = exprtype(e)== SymbolicUtils.TERM
-isSym(e::SubSe) = exprtype(e)== SymbolicUtils.SYM
+isTerm(e::SubSe) = exprtype(e) == SymbolicUtils.TERM
+isSym(e::SubSe) = exprtype(e) == SymbolicUtils.SYM
 
 isSurreal(e::SubSe) = isTerm(e) && operation(e) == X_s
 function arg1(e::SubSe) 
@@ -37,78 +35,35 @@ function arg1(e::SubSe)
 	return arguments(e)[1]
 end
 
-function Base.show(io::IO, e::SubSe)
+@inline function typeofSubSe(e::SubSe)
 	if isTerm(e)
-		if operation(e) == add_s
-			print(io, arguments(e)[1], "+", arguments(e)[2])
-		elseif operation(e) == mul_s
-			print(io, arguments(e)[1], "*", arguments(e)[2])
-		elseif operation(e) == lu_s
-			print(io, arguments(e)[1], "∪", arguments(e)[2])
-		elseif operation(e) == uu_s
-			print(io, arguments(e)[1], "∩", arguments(e)[2])
-		elseif operation(e) == neg_s
-			print(io, "-", arguments(e)[1])
-		elseif operation(e) == inv_s
-			print(io, "1/", arguments(e)[1])
-		elseif operation(e) == X_s
-			print(io, arguments(e)[1])
-		else
-			@show operation(e)
-			TODO
-		end
+		return Symbol(operation(e))
 	elseif isSym(e)
-		if nameof(e) == :n_s
-			print(io, "n")
-		elseif nameof(e) == :omega_s
-			print(io, "ω")
-		else
-			@show nameof(e)
-			TODO
-		end
+		return nameof(e)
 	else
 		@show exprtype(e)
 		TODO
 	end
 end
 
-function isFinite(e::SubSe)::Bool
-	if isTerm(e)
-		if operation(e) == add_s
-			local f1 = isFinite(arguments(e)[1])
-			local f2 = isFinite(arguments(e)[2])
-			f1 && f2 && return true
-			if !f1 && !f2
-				# both infinite
-				TODO
-			end
-			return false
-		elseif operation(e) == neg_s
-			return isFinite(arguments(e)[1])
-		elseif operation(e) == X_s
-			return isFinite(arguments(e)[1])
-		else
-			@show operation(e)
-			TODO
-		end
-	elseif isSym(e)
-		if nameof(e) == :n_s
-			return false
-		elseif nameof(e) == :omega_s
-			return false
-		else
-			@show nameof(e)
-			TODO
-		end
-	else
-		TODO
+function Base.show(io::IO, e::SubSe)
+	@match typeofSubSe(e) begin
+		:add_s	=> print(io, arguments(e)[1], "+", arguments(e)[2])
+		:mul_s	=> print(io, arguments(e)[1], "*", arguments(e)[2])
+		:lu_s	=> print(io, arguments(e)[1], "∪", arguments(e)[2])
+		:uu_s	=> print(io, arguments(e)[1], "∩", arguments(e)[2])
+		:neg_s	=> print(io, "-", arguments(e)[1])
+		:inv_s	=>print(io, "1/", arguments(e)[1])
+		:X_s	=> print(io, arguments(e)[1])
+		:n_s	=> print(io, "n")
+		:omega_s => print(io, "ω")
+		_ => @assert false typeofSubSe(e)
 	end
-
 end
 
-function hasFiniteUpperLimit(e::SubSe)
-	if isTerm(e)
-		if operation(e) == add_s
+function isFinite(e::SubSe)::Bool
+	@match typeofSubSe(e) begin
+		:add_s => begin
 			local f1 = isFinite(arguments(e)[1])
 			local f2 = isFinite(arguments(e)[2])
 			f1 && f2 && return true
@@ -117,25 +72,33 @@ function hasFiniteUpperLimit(e::SubSe)
 				TODO
 			end
 			return false
-		elseif operation(e) == neg_s
-			return hasFiniteLowerLimit(arguments(e)[1])
-		elseif operation(e) == X_s
-			return isFinite(arguments(e)[1])
-		else
-			@show operation(e)
-			TODO
 		end
-	elseif isSym(e)
-		if nameof(e) == :n_s
+		:neg_s	=> return isFinite(arguments(e)[1])
+		:X_s	=> return isFinite(arguments(e)[1])
+		:n_s	=> return false
+		:omega_s => return false
+		_ => @assert false typeofSubSe(e)
+	end
+end
+
+	
+
+function hasFiniteUpperLimit(e::SubSe)
+	@match typeofSubSe(e) begin
+		:add_s => begin
+			local f1 = isFinite(arguments(e)[1])
+			local f2 = isFinite(arguments(e)[2])
+			f1 && f2 && return true
+			if !f1 && !f2
+				# both infinite
+				TODO
+			end
 			return false
-		elseif nameof(e) == :omega_s
-			return false
-		else
-			@show nameof(e)
-			TODO
 		end
-	else
-		TODO
+		:neg_s	=> return  hasFiniteLowerLimit(arguments(e)[1])
+		:X_s => return isFinite(arguments(e)[1])
+		:n_s => return false
+		:omega_s => return false
 	end
 end
 
