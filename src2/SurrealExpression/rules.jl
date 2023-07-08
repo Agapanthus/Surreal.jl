@@ -11,17 +11,28 @@ function se(f)
 	end
 end
 
+"surreal check"
+function sc(f = identity)
+    return x -> begin
+       if f isa Surreal
+        return se(f)(x)
+       else 
+        return false
+       end
+    end
+end
+
 
 function createRewriters()
     simplificationRules = [
-        @rule X_s(~x) => X_s(simplify(~x))
+        @rule ~x::sc() => simplify(~x)
     ]
     
     additionRules = [
-        @rule (X_s(~x::se(isZeroFast)) + ~y) => ~y
-        @rule (~y + X_s(~x::se(isZeroFast))) => ~y
+        @rule (~x::sc(isZeroFast) + ~y) => ~y
+        @rule (~y + ~x::sc(isZeroFast)) => ~y
     
-        @rule X_s(~x) + X_s(~y) => X_s(~x + ~y)
+        @rule ~x::sc() + ~y::sc() => ~x + ~y
     
         #  @rule add(~x, S(∅, ∅)) => ~x
         #  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
@@ -34,14 +45,14 @@ function createRewriters()
     luRules = [
    
         # ignore finite additions to infinite stuff
-        @rule lu_s(n_s + X_s(~x::se(isFinite)), ~y) => lu_s(n_s, ~y)
-        @rule lu_s(X_s(~x::se(isFinite))+ n_s, ~y) => lu_s(n_s, ~y)
-        @rule lu_s(~y, n_s + X_s(~x::se(isFinite))) => lu_s(n_s, ~y)
-        @rule lu_s(~y, X_s(~x::se(isFinite)) + n_s) => lu_s(n_s, ~y)
+        @rule lu_s(n_s + ~x::sc(isFinite), ~y) => lu_s(n_s, ~y)
+        @rule lu_s(~x::sc(isFinite)+ n_s, ~y) => lu_s(n_s, ~y)
+        @rule lu_s(~y, n_s + ~x::sc(isFinite)) => lu_s(n_s, ~y)
+        @rule lu_s(~y, ~x::sc(isFinite) + n_s) => lu_s(n_s, ~y)
     
         # ignore merging smaller stuff (TODO: how to use acrule here?)
-        @rule lu_s(n_s, X_s(~x::se(isInfinite))) => X_s(~x)
-        #@rule lu_s(-n_s, X_s(~x::se(isInfinite))) => X_s(~x)
+        @rule lu_s(n_s, ~x::sc(isInfinite)) => ~x
+        #@rule lu_s(-n_s, ~x::sc(isInfinite)) => ~x
 
         # same on both sides is irrelevant
         @rule lu_s(~x, ~x) => ~x
@@ -50,7 +61,7 @@ function createRewriters()
 
     uuRules = [
         # ignore merging smaller stuff (TODO: how to use acrule here?)
-        @rule uu_s(-n_s, X_s(~x::se(isInfinite))) => X_s(~x)
+        @rule lu_s(-n_s, ~x::sc(isInfinite)) => ~x
 
         # same on both sides is irrelevant
         @rule uu_s(~x, ~x) => ~x
@@ -58,8 +69,8 @@ function createRewriters()
     ]
     
     omegaRules = [
-        @rule X_s(~x::se(isOmegaFast)) => omega_s
-        @rule X_s(~x::se(isMinusOmegaFast)) => -omega_s
+        @rule ~x::sc(isOmegaFast) => omega_s
+        @rule ~x::sc(isMinusOmegaFast) => -omega_s
     ]
 
     prepareChain(cas) = x -> SymbolicUtils.simplify(x;
@@ -80,4 +91,4 @@ function createRewriters()
     simplifyRewriter
 end
 
-simplifyRewriter = createRewriters()
+#simplifyRewriter = createRewriters()

@@ -50,17 +50,17 @@ function simplify(x::CountedSurrealSet, upper::Bool)
 	return res
 end
 
--(x::CountedSurrealSet) = CountedSurrealSet(neg_s(x.e))
+-(x::CountedSurrealSet) = CountedSurrealSet(-x.e)
 
-@commu +(x::CountedSurrealSet, y::Surreal) = x + CountedSurrealSet(X_s(y))
+@commu +(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(x.e + y)
 +(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e + y.e)
 
-@commu *(x::CountedSurrealSet, y::Surreal) = x * CountedSurrealSet(X_s(y))
+@commu *(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(x.e * y)
 *(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e * y.e)
 
-@commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = lowerUnion(x, CountedSurrealSet(X_s(y.s)))
+@commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.s)))
 lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.e)))
 
-@commu upperUnion(x::CountedSurrealSet, y::SingularSurrealSet) = upperUnion(x, CountedSurrealSet(X_s(y.s)))
+@commu upperUnion(x::CountedSurrealSet, y::SingularSurrealSet) = CountedSurrealSet(simplifyRewriter(uu_s(x.e, y.s)))
 upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(uu_s(x.e, y.e)))
 

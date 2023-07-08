@@ -26,7 +26,7 @@ end
 
 
 "true, iff there is a finite number larger or equal to every element in e"
-function hasUpperLimit(e::SubSe)
+function hasUpperLimit(e::SubSe)::Bool
 	@match typeofSubSe(e) begin
 		# TODO
 		#=:add_s => begin
@@ -64,7 +64,7 @@ function hasUpperLimit(e::SubSe)
 end
 
 "true, iff there is a finite number smaller than every element in e"
-function hasLowerLimit(e::SubSe)
+function hasLowerLimit(e::SubSe)::Bool
 	@match typeofSubSe(e) begin
 		# TODO
 		:add_s => begin
@@ -85,7 +85,17 @@ function hasLowerLimit(e::SubSe)
 
 			TODO
 		end
-		#:neg_s => return hasUpperLimit(left(e))
+		:mul => begin
+			local fs = iterateMul(e)
+
+			# negation, i.e., -1 * x
+			if length(fs) == 2 && fs[1] == (S1, SM1) && fs[2][1] == S1
+				return hasUpperLimit(fs[2][2])
+			end
+
+			TODO
+		end
+
 		:X_s => return isPositive(left(e)) || isFinite(left(e))
 		:n_s => return true
 		:omega_s => return true

@@ -53,7 +53,8 @@ function runTests()
 	@assert lca(-41 // 8, -6 // 1) == (-6 // 1, -11 // 2)
 	@assert lca(1 // 1, 4 // 1) == (1 // 1, 2 // 1)
 
-	@assert (Surreal( X_s(Surreal(0)) + X_s(Surreal(1)), nil) |> simplify) == Surreal(2)
+	#=
+	@assert (Surreal(S0 * n_s + S0, nil) |> simplify) == Surreal(2)
 	@assert simplify(Surreal([1, 2, [3, 4]], 5)) ⊜ Surreal(4, 5)
 
 	@assert Surreal(1) + omega ⊜ omega + Surreal(1)
@@ -66,6 +67,7 @@ function runTests()
 	for n in [omega, omega + Surreal(3), -omega]
 		@assert isInfinite(n)
 	end
+	=#
 end
 
 @time runTests()

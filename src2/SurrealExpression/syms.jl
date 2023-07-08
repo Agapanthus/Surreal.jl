@@ -8,9 +8,6 @@ SymbolicUtils.:(<ₑ)(a::Surreal, b::Symbolic) = true
 @syms n_s::SurrealExpression
 @syms omega_s::SurrealExpression
 
-# TODO: remove X_s
-@syms X_s(x::Surreal)::SurrealExpression
-
 # lower union 
 @syms lu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 @syms uu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
@@ -59,6 +56,7 @@ function SymbolicUtils.similarterm(t::SubSe, f, args, symtype; metadata = nothin
 end
 
 
+isTerm2(e::Symbolic) = exprtype(e) == SymbolicUtils.TERM
 isTerm(e::SubSe) = exprtype(e) == SymbolicUtils.TERM
 isSym(e::SubSe) = exprtype(e) == SymbolicUtils.SYM
 isAdd(e::SubSe) = exprtype(e) == SymbolicUtils.ADD
@@ -66,7 +64,7 @@ isMul(e::SubSe) = exprtype(e) == SymbolicUtils.MUL
 left(e::SubSe) = arguments(e)[1]
 right(e::SubSe) = arguments(e)[2]
 
-isSurreal(e::SubSe) = isTerm(e) && operation(e) == X_s
+#isSurreal(e::SubSe) = isTerm(e) && operation(e) == X_s
 
 @inline function typeofSubSe(e::SubSe)
 	if isTerm(e)
@@ -85,7 +83,8 @@ end
 
 
 function iterateAdd(e)
-	local res = Vector{Tuple{Surreal, SubSe}}()
+	@assert isAdd(e)
+	local res = Vector{Tuple{Surreal, Union{Surreal, SubSe}}}()
 	local a = arguments(e)
 
 	function getFactor(e)
@@ -103,7 +102,7 @@ function iterateAdd(e)
 	end
 
 	if a[1] isa Surreal
-		push!(res, (S1, X_s(a[1])))
+		push!(res, (S1, a[1]))
 	else
 		push!(res, getFactor(a[1]))
 	end
@@ -113,7 +112,39 @@ function iterateAdd(e)
 	res
 end
 
-function printFactor(io::IO, factor, v, forceSign::Bool = false)
+
+function iterateMul(e)
+	@assert isMul(e)
+	local res = Vector{Tuple{Surreal, Union{Surreal, SubSe}}}()
+	local a = arguments(e)
+
+	function getExponent(e)
+		if ispow(e)
+			local args = arguments(e)
+			@assert length(args) == 2
+			local v, exponent = args
+			@assert exponent isa Surreal
+			@assert !(exponent == S0)
+			exponent, v
+		else
+			@assert typeof(e) == SubSe
+			S1, e
+		end
+	end
+
+	if a[1] isa Surreal
+		push!(res, (S1, a[1]))
+	else
+		push!(res, getExponent(a[1]))
+	end
+	for arg in a[2:end]
+		push!(res, getExponent(arg))
+	end
+	res
+end
+
+
+function printSummand(io::IO, factor, v, forceSign::Bool = false)
 	if factor == S1
 		forceSign && print(io, "+")
 		print(io, v)
@@ -125,21 +156,32 @@ function printFactor(io::IO, factor, v, forceSign::Bool = false)
 	end
 end
 
+
+function printFactor(io::IO, exponent, v, forceSign::Bool = false)
+	@assert !(exponent == S0)
+	if exponent == S1
+		forceSign && print(io, "*")
+		print(io, v)
+	else
+		forceSign && print(io, "*")
+		print(io, v, "^", exponent)
+	end
+end
+
 function Base.show(io::IO, e::SubSe)
 	@match typeofSubSe(e) begin
 		:add => begin
 			print(io, "(")
 			for (i, arg) in enumerate(iterateAdd(e))
-				printFactor(io, arg..., i > 1)
+				printSummand(io, arg..., i > 1)
 			end
 			print(io, ")")
 		end
-		:mul => for (i, arg) in enumerate(arguments(e))
-			print(io, i == 1 ? "" : "*", arg)
+		:mul => for (i, arg) in enumerate(iterateMul(e))
+			printFactor(io, arg..., i > 1)
 		end
 		:lu_s => print(io, left(e), "∪", right(e))
 		:uu_s => print(io, left(e), "∩", right(e))
-		:X_s => print(io, left(e))
 		:n_s => print(io, "n")
 		:omega_s => print(io, "ω")
 		_ => @assert false typeofSubSe(e)

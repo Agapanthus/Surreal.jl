@@ -18,9 +18,6 @@ function makeadd(sign, coeff::Surreal, xs...)
 		if x isa Surreal
 			coeff += x
 			continue
-		elseif isTerm(x) && operation(x) == X_s
-			coeff += left(x)
-			continue
 		end
 
 		if ismul(x)

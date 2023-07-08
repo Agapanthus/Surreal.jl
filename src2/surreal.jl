@@ -76,11 +76,23 @@ function simplify(x::Surreal)
 end
 
 
-+(x::Surreal, y::Surreal)::Surreal = Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
+function +(x::Surreal, y::Surreal)::Surreal
+	if isDyadic(x) && isDyadic(y)
+		return Surreal(toFrac(x) + toFrac(y))
+	end
+
+	Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
+end
 +(x::Surreal) = x
 -(x::Surreal) = Surreal(-x.R, -x.L)
 -(x::Surreal, y::Surreal)::Surreal = x + (-y)
 *(x::Surreal, y::Surreal)::Surreal = begin
+	if isDyadic(x) && isDyadic(y)
+		return Surreal(toFrac(x) * toFrac(y))
+	end
+
+	@show x y
+	TODO
 	local xly = x.L * y
 	local ylx = y.L * x
 	local ll = x.L * y.L
