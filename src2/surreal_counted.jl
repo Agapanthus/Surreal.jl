@@ -58,9 +58,9 @@ end
 @commu *(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(x.e * y)
 *(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e * y.e)
 
-@commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.s)))
-lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(lu_s(x.e, y.e)))
+@commu lowerUnion(x::CountedSurrealSet, y::SingularSurrealSet) = autoSurrealSet(simplifyRewriter(lu_s(x.e, y.s)))
+lowerUnion(x::CountedSurrealSet, y::CountedSurrealSet) = autoSurrealSet(simplifyRewriter(lu_s(x.e, y.e)))
 
-@commu upperUnion(x::CountedSurrealSet, y::SingularSurrealSet) = CountedSurrealSet(simplifyRewriter(uu_s(x.e, y.s)))
-upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(simplifyRewriter(uu_s(x.e, y.e)))
+@commu upperUnion(x::CountedSurrealSet, y::SingularSurrealSet) = autoSurrealSet(simplifyRewriter(uu_s(x.e, y.s)))
+upperUnion(x::CountedSurrealSet, y::CountedSurrealSet) = autoSurrealSet(simplifyRewriter(uu_s(x.e, y.e)))
 

@@ -28,32 +28,21 @@ end
 "true, iff there is a finite number larger or equal to every element in e"
 function hasUpperLimit(e::SubSe)::Bool
 	@match typeofSubSe(e) begin
-		# TODO
-		#=:add_s => begin
-			local fu1 = hasUpperLimit(left(e))
-			local fu2 = hasUpperLimit(right(e))
-			# exactly one unlimited: definitely no limit
-			xor(fu1, fu2) && return false
-			# both limited: definitely a limit
-			fu1 && fu2 && return true
+		
+		:add => begin
+			local ul = map(iterateAdd(e)) do (factor, v)
+				@assert isFinite(factor)
+				@assert isPositive(factor)
+				@assert !isZeroFast(factor)
+				return hasUpperLimit(v), hasFiniteElements(v)
+			end
+			# all limited -> definitely a limit
+			all(last, ul) && return true
 
-			# both unlimited...
-
-			local fe1 = hasFiniteElements(left(e))
-			local fe2 = hasFiniteElements(right(e))
-
-			# one unlimited and the other one has finite elements -> still unlimited
-			((!fu1 && fe2) || (!fu2 && fe1)) && return false
+			# all are positively infinite or have limited elements -> no limit
+			all(x -> !first(x) || last(x), ul) && return false
 
 			TODO
-		end
-		#:neg_s => return hasLowerLimit(left(e))
-		=#
-		:add => begin
-			for arg in iterateAdd(e)
-				@show arg
-			end
-			return true
 		end
 		:X_s => return isNegative(left(e)) || isFinite(left(e))
 		:n_s => return false
@@ -67,7 +56,7 @@ end
 function hasLowerLimit(e::SubSe)::Bool
 	@match typeofSubSe(e) begin
 		# TODO
-		:add_s => begin
+		#=:add_s => begin
 			local fl1 = hasLowerLimit(left(e))
 			local fl2 = hasLowerLimit(right(e))
 			# exactly one unlimited: definitely no limit
@@ -84,7 +73,7 @@ function hasLowerLimit(e::SubSe)::Bool
 			((!fl1 && fe2) || (!fl2 && fe1)) && return false
 
 			TODO
-		end
+		end=#
 		:mul => begin
 			local fs = iterateMul(e)
 
@@ -96,7 +85,6 @@ function hasLowerLimit(e::SubSe)::Bool
 			TODO
 		end
 
-		:X_s => return isPositive(left(e)) || isFinite(left(e))
 		:n_s => return true
 		:omega_s => return true
 		_ => @assert false typeofSubSe(e)

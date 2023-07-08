@@ -147,6 +147,9 @@ function isFinite(x::Surreal)
 	return (isPositive(x) && hasUpperLimit(x.L)) || (isNegative(x) && hasLowerLimit(x.R))
 end
 isInfinite(x::Surreal) = !isFinite(x)
+hasLowerLimit(x::Surreal) = isPositive(x) || isFinite(x)
+hasUpperLimit(x::Surreal) = isNegative(x) || isFinite(x)
+hasFiniteElements(x::Surreal) = isFinite(x)
 
 "birthday of this representation (not the representant of the equivalence group)"
 birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1

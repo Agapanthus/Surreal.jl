@@ -12,27 +12,26 @@ function se(f)
 end
 
 "surreal check"
-function sc(f = identity)
+function sc(f)
     return x -> begin
-       if f isa Surreal
-        return se(f)(x)
-       else 
+        x isa Surreal && return se(f)(x)
         return false
-       end
     end
 end
+
+isSurreal(x) =   x isa Surreal
 
 
 function createRewriters()
     simplificationRules = [
-        @rule ~x::sc() => simplify(~x)
+        @rule ~x::se(isSurreal) => simplify(~x)
     ]
     
     additionRules = [
         @rule (~x::sc(isZeroFast) + ~y) => ~y
         @rule (~y + ~x::sc(isZeroFast)) => ~y
     
-        @rule ~x::sc() + ~y::sc() => ~x + ~y
+        @rule ~x::se(isSurreal) + ~y::se(isSurreal) => ~x + ~y
     
         #  @rule add(~x, S(∅, ∅)) => ~x
         #  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
@@ -44,11 +43,8 @@ function createRewriters()
     
     luRules = [
    
-        # ignore finite additions to infinite stuff
-        @rule lu_s(n_s + ~x::sc(isFinite), ~y) => lu_s(n_s, ~y)
-        @rule lu_s(~x::sc(isFinite)+ n_s, ~y) => lu_s(n_s, ~y)
-        @rule lu_s(~y, n_s + ~x::sc(isFinite)) => lu_s(n_s, ~y)
-        @rule lu_s(~y, ~x::sc(isFinite) + n_s) => lu_s(n_s, ~y)
+        # ignore finite additions to infinite stuff  # TODO: is acrule right here?
+        @acrule lu_s(~x::sc(isFinite) + n_s, ~y) => lu_s(n_s, ~y)
     
         # ignore merging smaller stuff (TODO: how to use acrule here?)
         @rule lu_s(n_s, ~x::sc(isInfinite)) => ~x
@@ -91,4 +87,4 @@ function createRewriters()
     simplifyRewriter
 end
 
-#simplifyRewriter = createRewriters()
+simplifyRewriter = createRewriters()

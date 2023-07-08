@@ -183,6 +183,7 @@ function Base.show(io::IO, e::SubSe)
 		:lu_s => print(io, left(e), "∪", right(e))
 		:uu_s => print(io, left(e), "∩", right(e))
 		:n_s => print(io, "n")
+		:n => print(io, "n")
 		:omega_s => print(io, "ω")
 		_ => @assert false typeofSubSe(e)
 	end
