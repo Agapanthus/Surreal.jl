@@ -159,11 +159,10 @@ end
 
 function printFactor(io::IO, exponent, v, forceSign::Bool = false)
 	@assert !(exponent == S0)
+	forceSign && print(io, "*")
 	if exponent == S1
-		forceSign && print(io, "*")
 		print(io, v)
 	else
-		forceSign && print(io, "*")
 		print(io, v, "^", exponent)
 	end
 end
@@ -177,8 +176,15 @@ function Base.show(io::IO, e::SubSe)
 			end
 			print(io, ")")
 		end
-		:mul => for (i, arg) in enumerate(iterateMul(e))
-			printFactor(io, arg..., i > 1)
+		:mul => begin
+			local factors = iterateMul(e)
+			if factors[1] == (S1, SM1)
+				print(io, "-")
+				popfirst!(factors)
+			end
+			for (i, arg) in enumerate(factors)
+				printFactor(io, arg..., i > 1)
+			end
 		end
 		:lu_s => print(io, left(e), "∪", right(e))
 		:uu_s => print(io, left(e), "∩", right(e))
