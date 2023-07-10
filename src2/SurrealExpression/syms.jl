@@ -15,8 +15,7 @@ SymbolicUtils.:(<ₑ)(a::Surreal, b::Surreal) = true # a <= b
 # upper union (interested in upper bounds, usually left side)
 @syms uu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 
-@syms le_s(x::SurrealExpression, y::SurrealExpression)::Bool
-@syms leq_s(x::SurrealExpression, y::SurrealExpression)::Bool
+@syms isPos_s(x::SurrealExpression)::Bool
 
 # only interested in the upper bound
 @syms ub_s(x::SurrealExpression)::SurrealExpression
@@ -176,10 +175,26 @@ function iterateMul(e)
 end
 
 
+"negation, i.e., -1 * x"
+function isNeg(e, f = x -> x == SM1)
+	e isa SubSe && isMul(e) || return false
+	local fs = iterateMul(e)
+	return length(fs) == 2 && fs[1][1] == (S1) && isDyadic(fs[1][2]) && f(fs[1][2]) && fs[2][1] == S1
+end
+
 function printSummand(io::IO, factor, v, forceSign::Bool = false)
 	if factor == S1
-		forceSign && print(io, "+")
-		print(io, v)
+		if isNeg(v, isNegative)
+			local (_, factor2), (_, v2) = iterateMul(v)
+			if factor2 == SM1
+				print(io, "-", v2)
+			else
+				print(io, factor2, "*", v2)
+			end
+		else
+			forceSign && print(io, "+")
+			print(io, v)
+		end
 	elseif factor == SM1
 		print(io, "-", v)
 	else
@@ -233,7 +248,7 @@ end
 function <(x::SubSePlus, y::SubSePlus)
 	#archimedeanClass(x)
 
-	local res = simplifyRewriter(le_s(ub_s(x), lb_s(y)))
+	local res = simplifyRewriter(isPos_s(lb_s(y - x)))
 	res === true && return true
 	res === false && return false
 	@show x y res
@@ -241,9 +256,8 @@ function <(x::SubSePlus, y::SubSePlus)
 end
 
 function <=(x::SubSePlus, y::SubSePlus)
-	local res = simplifyRewriter(leq_s(ub_s(x), lb_s(y)))
-	res === true && return true
-	res === false && return false
+	x < y && return true
+
 	@show x y res
 	TODO
 end

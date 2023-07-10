@@ -22,8 +22,6 @@ function getGLB(e::SubSe)::Surreal
 	end
 end
 
-"negation, i.e., -1 * x"
-isNeg(fs) = length(fs) == 2 && fs[1] == (S1, SM1) && fs[2][1] == S1
 
 
 "true, iff there is a finite number larger or equal to every element in e"
@@ -44,7 +42,7 @@ function hasUpperLimit(e::SubSe)::Bool
 		end
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return hasLowerLimit(fs[2][2])
+			isNeg(e) && return hasLowerLimit(fs[2][2])
 
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
@@ -88,7 +86,7 @@ function allNegative(e::SubSe)::Bool
 		end
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return allPositive(fs[2][2])
+			isNeg(e) && return allPositive(fs[2][2])
 
 			@show fs
 			TODO
@@ -120,7 +118,12 @@ function allPositive(e::SubSe)::Bool
 		end
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return allNegative(fs[2][2])
+			isNeg(e) && return allNegative(fs[2][2])
+
+			if length(fs) == 2 && fs[1][1] == S1 && isDyadic(fs[1][2]) && fs[2][1] == S1
+				isPositive(fs[1][2]) && return allPositive(fs[2][2])
+				isNegative(fs[1][2]) && return allNegative(fs[2][2])
+			end
 
 			@show fs
 			TODO
@@ -159,7 +162,7 @@ function hasLowerLimit(e::SubSe)::Bool
 		end
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return hasUpperLimit(fs[2][2])
+			isNeg(e) && return hasUpperLimit(fs[2][2])
 
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
@@ -204,7 +207,7 @@ function hasFiniteElements(e::SubSe)
 
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return hasFiniteElements(fs[2][2])
+			isNeg(e) && return hasFiniteElements(fs[2][2])
 
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
@@ -249,7 +252,7 @@ function hasInfiniteElements(e::SubSe)
 
 		:mul => begin
 			local fs = iterateMul(e)
-			isNeg(fs) && return hasInfiniteElements(fs[2][2])
+			isNeg(e) && return hasInfiniteElements(fs[2][2])
 
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors

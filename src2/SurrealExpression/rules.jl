@@ -26,6 +26,8 @@ notUB(x) = !(x isa SubSe && isTerm(x) && operation(x) == ub_s)
 notLB(x) = !(x isa SubSe && isTerm(x) && operation(x) == lb_s)
 
 isSurreal(x) = x isa Surreal
+isPositiveDyadic(x) = isDyadic(x) && isPositive(x)
+isNegativeDyadic(x) = isDyadic(x) && isNegative(x)
 
 notTrivialZero(x) = !(x isa Surreal && isZeroFast(x))
 
@@ -57,8 +59,12 @@ function createRewriters()
 		# transport into union        
 		@rule ub_s(uu_s(~x, ~y)) => uu_s(ub_s(~x), ub_s(~y))
 
-		# ignore finite additions to infinite stuff  # TODO: acrule?
+		# ignore finite additions to unlimited stuff  # TODO: acrule?
 		@rule ub_s(~x::sc(isFinite) + n_s) => n_s
+
+		# ignore finite multiplications of unlimited stuff
+		@rule ub_s(~x::sc(isPositiveDyadic) * n_s) => n_s
+
 	]
 
 	# lower bound focused (right side)
@@ -74,6 +80,13 @@ function createRewriters()
 
 		# ignore finite additions to infinite stuff  # TODO: acrule? apparently only works when addition at base-level
 		@rule lb_s(~x::sc(isFinite) + (-1(n_s))) => -1(n_s)
+		
+		# ignore finite multiplications of unlimited stuff
+		@rule lb_s(~x::sc(isNegativeDyadic) * n_s) => -n_s
+
+		# LAST RULE (everything else tried before!): move lb_s inwards
+		@rule lb_s(~x + ~y) => lb_s(~x) + lb_s(~y)
+
 	]
 
 	# upper union
@@ -103,12 +116,13 @@ function createRewriters()
 	]
 
 
-	# less than
-	leRules = [
+	# is positive
+	isPosRules = [
 		# try to postpone the problem
-		@rule le_s(~x::se(isSurreal), ~y::se(isSurreal)) => ~x < ~y
-		@rule le_s(S0, ~y) => allPositive(~y)
+		@rule isPos_s(~x::se(isSurreal)) => isPositive(~x)
+		@rule isPos_s(~y) => allPositive(~y)
 
+		#=
 		@rule le_s(~x::seNot(hasInfiniteElements), ~y::sc(isPosInfinite)) => true
 		@rule le_s(~x::seNot(hasUpperLimit), ~y::se(hasFiniteElements)) => false
 
@@ -118,17 +132,11 @@ function createRewriters()
 		@rule le_s(ub_s(~x::se(notTrivialZero)), lb_s(~y)) => le_s(S0, ~y - ~x)
 		@rule le_s(ub_s(~x::se(notTrivialZero)), ~y) => le_s(S0, ~y - ~x)
 		@rule le_s(~x::se(notTrivialZero), ~y) => le_s(S0, ~y - ~x)
+		=#
 
 		@rule le_s(n_s, ~y::sc(isPosInfinite)) => true
 	]
 
-	# less than or equal
-	leqRules = [
-		# try to postpone the problem
-		@rule leq_s(~x::se(isSurreal), ~y::se(isSurreal)) => ~x <= ~y
-
-		@rule leq_s(~x::se(hasUpperLimit), ~y::sc(isPosInfinite)) => true
-	]
 
 	de_prettify = [
 		@rule omega_s => omega
@@ -157,8 +165,7 @@ function createRewriters()
 		ubRules...,
 		lbRules...,
 		luRules...,
-		leRules...,
-		leqRules...,
+		isPosRules...,
 		uuRules...,
 	))
 	
