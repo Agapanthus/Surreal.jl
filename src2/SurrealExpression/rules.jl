@@ -11,6 +11,8 @@ function se(f)
 	end
 end
 
+seNot(f) = se(x -> !f(x))
+
 "surreal check"
 function sc(f)
 	return x -> begin
@@ -32,6 +34,8 @@ function createRewriters()
 	]
 
 	additionRules = [
+        @rule -(~x) => -1(~x)
+        @rule -(~x, ~y) => ~x + -1(~y)
 
 	#  @rule add(~x, S(∅, ∅)) => ~x
 	#  @rule add(SSS(~x), ~y) => SSS(~x ⊕ ~y)
@@ -46,27 +50,30 @@ function createRewriters()
 		# remove around single values
 		@rule ub_s(~x::se(isSurreal)) => (~x)
 		@rule ub_s(n_s) => n_s
+		@rule ub_s(ub_s(~x)) => ub_s(~x)
 		@rule ub_s(omega_s) => omega_s
 
 		# transport into union        
 		@rule ub_s(uu_s(~x, ~y)) => uu_s(ub_s(~x), ub_s(~y))
 
 		# ignore finite additions to infinite stuff  # TODO: acrule?
-		@acrule ub_s(~x::sc(isFinite) + n_s) => n_s
+		@rule ub_s(~x::sc(isFinite) + n_s) => n_s
 	]
 
 	# lower bound focused (right side)
 	lbRules = [
 		# remove around single values        
 		@rule lb_s(~x::se(isSurreal)) => (~x)
-		@rule lb_s(n_s) => n_s
+		@rule lb_s(-1(n_s)) => -1(n_s)
+		@rule lb_s(lb_s(~x)) => lb_s(~x)
 		@rule lb_s(omega_s) => omega_s
 
 		# transport into union     
 		@rule lb_s(lu_s(~x, ~y)) => lu_s(lb_s(~x), lb_s(~y))
 
-		# ignore finite additions to infinite stuff  # TODO: acrule?
-		@acrule lb_s(~x::sc(isFinite) - n_s) => -n_s]
+		# ignore finite additions to infinite stuff  # TODO: acrule? apparently only works when addition at base-level
+		@rule lb_s(~x::sc(isFinite) + (-1(n_s))) => -1(n_s)
+	]
 
 	# upper union
 	uuRules = [
@@ -84,8 +91,8 @@ function createRewriters()
 	# lower union
 	luRules = [
 		# ignore merging smaller stuff 
-		@rule lu_s(-n_s, ~x::sc(isNegInfinite)) => ~x
-		@rule lu_s(~x::sc(isNegInfinite), -n_s) => ~x
+		@rule lu_s(-1(n_s), ~x::sc(isNegInfinite)) => ~x
+		@rule lu_s(~x::sc(isNegInfinite), -1(n_s)) => ~x
 
 		# merge comparable values # TODO: could be problem if causing recursion
 		@rule lu_s(~x::se(isSurreal), ~y::se(isSurreal)) => min(~x, ~y)
@@ -94,16 +101,17 @@ function createRewriters()
 		@rule lu_s(~x, ~x) => ~x
 	]
 
+
 	# less than
 	leRules = [
 		# try to postpone the problem
 		@rule le_s(~x::se(isSurreal), ~y::se(isSurreal)) => ~x < ~y
 
-		@rule le_s(~x::se(hasUpperLimit), ~y::sc(isPosInfinite)) => true
-		@rule le_s(~x::se(x -> !hasUpperLimit(x)), ~y::se(hasFiniteElements)) => false
+		@rule le_s(~x::seNot(hasInfiniteElements), ~y::sc(isPosInfinite)) => true
+		@rule le_s(~x::seNot(hasUpperLimit), ~y::se(hasFiniteElements)) => false
 
-		@rule le_s(~x::sc(isNegInfinite), ~y::se(hasLowerLimit)) => true
-		@rule le_s(~x::se(hasFiniteElements), ~y::se(x -> !hasLowerLimit(x))) => false
+		@rule le_s(~x::sc(isNegInfinite), ~y::seNot(hasInfiniteElements)) => true
+		@rule le_s(~x::se(hasFiniteElements), ~y::seNot(hasLowerLimit)) => false
 
 		@rule le_s(n_s, ~y::sc(isPosInfinite)) => true
 	]
@@ -116,10 +124,17 @@ function createRewriters()
 		@rule leq_s(~x::se(hasUpperLimit), ~y::sc(isPosInfinite)) => true
 	]
 
+	de_prettify = [
+		@rule omega_s => omega
+	]
 
-	omegaRules = [
+	# interferes with other rules since numbers aren't of type Surreal anymore
+	prettify = [
 		@rule ~x::sc(isOmegaFast) => omega_s
-		@rule ~x::sc(isMinusOmegaFast) => -omega_s
+		@rule ~x::sc(isMinusOmegaFast) => -1(omega_s)
+
+		@rule ub_s(~x) => ~x
+		@rule lb_s(~x) => ~x
 	]
 
 	prepareChain(cas) = x -> SymbolicUtils.simplify(x;
@@ -130,6 +145,7 @@ function createRewriters()
 	)
 
 	simplifyRewriter = prepareChain(vcat(
+		de_prettify...,
 		simplificationRules...,
 		additionRules...,
 		ubRules...,
@@ -138,11 +154,13 @@ function createRewriters()
 		leRules...,
 		leqRules...,
 		uuRules...,
-		# interferes with other rules since numbers aren't of type Surreal anymore
-		#omegaRules...
+	))
+	
+	prettifyRewriter = prepareChain(vcat(
+		prettify...,
 	))
 
-	simplifyRewriter
+	simplifyRewriter, prettifyRewriter
 end
 
-simplifyRewriter = createRewriters()
+simplifyRewriter, prettifyRewriter = createRewriters()

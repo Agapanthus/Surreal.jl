@@ -3,6 +3,7 @@ SymbolicUtils.:(<ₑ)(a::SurrealExpression, b::Surreal) = false
 SymbolicUtils.:(<ₑ)(a::Surreal, b::SurrealExpression) = true
 SymbolicUtils.:(<ₑ)(a::Symbolic, b::Surreal) = false
 SymbolicUtils.:(<ₑ)(a::Surreal, b::Symbolic) = true
+SymbolicUtils.:(<ₑ)(a::Surreal, b::Surreal) = true # a <= b
 
 # symbolic expression n
 @syms n_s::SurrealExpression

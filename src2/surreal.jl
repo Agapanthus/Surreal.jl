@@ -27,8 +27,12 @@ equiv(x::Surreal, y::Surreal) = y <= x && x <= y
 "not same equivalence class"
 ≇(x::Surreal, y::Surreal) = !(x ≅ y)
 
-Base.:(==)(x::Surreal, y) = @assert false "use equiv or isequal"
-Base.:(==)(x, y::Surreal) = @assert false "use equiv or isequal"
+function Base.:(==)(x::Surreal, y::Int64)
+	# TODO: fishy. This shouldn't exist, but is called while rewriting -omega + 1//2
+	return isequal(x, Surreal(y))
+end
+Base.:(==)(x::Surreal, y) = @assert false ("use equiv or isequal", x, y)
+Base.:(==)(x, y::Surreal) = @assert false ("use equiv or isequal", x, y)
 Base.:(==)(x::Surreal, y::Surreal) = isequal(x, y) # @assert false "use equiv or isequal" 
 Base.:(!=)(x::Surreal, y) = @assert false "use equiv or isequal"
 Base.:(!=)(x, y::Surreal) = @assert false "use equiv or isequal"
@@ -113,11 +117,37 @@ function mulDirect(x::Surreal, y::Surreal)::Surreal
 	Surreal(l, r)
 end
 
+function tryMulByAdding(x::Surreal, y::Surreal)
+	if isDyadic(x)
+		local n = toFrac(x)
+		if denominator(n) == 1 && abs(numerator(n)) < 10
+			local res = Surreal(0)
+			for _ in 1:abs(numerator(n))
+				res += y
+			end
+			if numerator(n) < 0
+				res = -res
+			end
+			return res
+		end
+	end
+	return nothing
+end
+
 "multiply, try to use tricks to be fast"
 function mul(x::Surreal, y::Surreal)::Surreal
-	if isDyadic(x) && isDyadic(y)
-		return Surreal(toFrac(x) * toFrac(y))
-	end
+	isDyadic(x) && isDyadic(y) && return Surreal(toFrac(x) * toFrac(y))
+	isequal(x, SM1) && return -y
+	isequal(y, SM1) && return -x
+	isequal(x, S1) && return y
+	isequal(y, S1) && return x
+	isequal(y, S0) && return S0
+	isequal(x, S0) && return S0
+
+	local res = tryMulByAdding(x, y)
+	isnothing(res) || return res
+	res = tryMulByAdding(y, x)
+	isnothing(res) || return res
 
 	return mulDirect(x, y)
 end
@@ -174,6 +204,7 @@ isNegInfinite(x::Surreal) = isInfinite(x) && isNegative(x)
 hasLowerLimit(x::Surreal) = isPositive(x) || isFinite(x)
 hasUpperLimit(x::Surreal) = isNegative(x) || isFinite(x)
 hasFiniteElements(x::Surreal) = isFinite(x)
+hasInfiniteElements(x::Surreal) = isInfinite(x)
 
 "birthday of this representation (not the representant of the equivalence group)"
 birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1

@@ -66,7 +66,9 @@ function runTests()
 		@assert isInfinite(n)
 	end
 
-	@assert simplify(omega - 1) < omega < omega + 1
+	@assert -omega - 3 < -omega - 1//2 < -omega < -omega + 1//4 < -omega + 1 < 0 < simplify(omega - 1) < omega < omega + 1//2 < omega + 1
+	@assert equiv(-omega + 1//2 - 1//2, -omega)
+
 end
 
 @time runTests()

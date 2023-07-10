@@ -93,44 +93,53 @@ end
 
 function *(a::SubSe, b::SubSe)::SubSe
 	# Always make sure Div wraps Mul
-	if isdiv(a) && isdiv(b)
-		Div(a.num * b.num, a.den * b.den)
-	elseif isdiv(a)
-		Div(a.num * b, a.den)
-	elseif isdiv(b)
-		Div(a * b.num, b.den)
-	elseif ismul(a) && ismul(b)
-		Mul(SurrealExpression,
-			a.coeff * b.coeff,
-			_merge(+, a.dict, b.dict, filter = _iszero))
-	elseif ismul(a) && ispow(b)
-		if b.exp isa Number
+	try
+		if isdiv(a) && isdiv(b)
+			Div(a.num * b.num, a.den * b.den)
+		elseif isdiv(a)
+			Div(a.num * b, a.den)
+		elseif isdiv(b)
+			Div(a * b.num, b.den)
+		elseif ismul(a) && ismul(b)
 			Mul(SurrealExpression,
-				a.coeff, _merge(+, a.dict, Base.ImmutableDict(b.base => b.exp), filter = _iszero))
+				a.coeff * b.coeff,
+				_merge(+, a.dict, b.dict, filter = _iszero))
+		elseif ismul(a) && ispow(b)
+			if b.exp isa Number
+				Mul(SurrealExpression,
+					a.coeff, _merge(+, a.dict, Base.ImmutableDict(b.base => b.exp), filter = _iszero))
+			else
+				Mul(SurrealExpression,
+					a.coeff, _merge(+, a.dict, Base.ImmutableDict(b => 1), filter = _iszero))
+			end
+		elseif ispow(a) && ismul(b)
+			b * a
 		else
-			Mul(SurrealExpression,
-				a.coeff, _merge(+, a.dict, Base.ImmutableDict(b => 1), filter = _iszero))
+			Mul(SurrealExpression, SymbolicUtils.makemul(1, a, b)...)
 		end
-	elseif ispow(a) && ismul(b)
-		b * a
-	else
-		Mul(SurrealExpression, SymbolicUtils.makemul(1, a, b)...)
+	catch err
+		@show err
 	end
 end
 
 function *(a::Surreal, b::SubSe)::SubSe
-	if isZeroFast(a)
-		a
-	elseif isOneFast(a)
-		b
-	elseif isdiv(b)
-		Div(a * b.num, b.den)
-	elseif isone(-a) && isadd(b)
-		# -1(a+b) -> -a - b
-		T = promote_symtype(+, typeof(a), symtype(b))
-		Add(T, b.coeff * a, Dict{Any, Any}(k => v * a for (k, v) in b.dict))
-	else
-		Mul(SurrealExpression, SymbolicUtils.makemul(a, b)...)
+
+	try
+		if isZeroFast(a)
+			a
+		elseif isOneFast(a)
+			b
+		elseif isdiv(b)
+			Div(a * b.num, b.den)
+		elseif isone(-a) && isadd(b)
+			# -1(a+b) -> -a - b
+			T = promote_symtype(+, typeof(a), symtype(b))
+			Add(T, b.coeff * a, Dict{Any, Any}(k => v * a for (k, v) in b.dict))
+		else
+			Mul(SurrealExpression, SymbolicUtils.makemul(a, b)...)
+		end
+	catch err
+		@show err
 	end
 end
 
