@@ -7,7 +7,7 @@ struct Surreal <: SurrealExpression
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
 		# TODO: make a macro like "@inbounds" to turn this off
-		check && @assert l < r "rule 1: l < r violated by $(l) an $(r)"
+		check && @assert l < r "rule 1: l < r violated by $(l) and $(r)"
 		new(l, r)
 	end
 end
