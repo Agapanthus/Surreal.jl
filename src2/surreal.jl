@@ -102,8 +102,6 @@ end
 
 "multiply, only using the naive defintion"
 function mulDirect(x::Surreal, y::Surreal)::Surreal
-	@show x y
-	TODO
 	local xly = x.L * y
 	local ylx = y.L * x
 	local ll = x.L * y.L
@@ -114,7 +112,7 @@ function mulDirect(x::Surreal, y::Surreal)::Surreal
 	local rl = x.R * y.L
 	local l = leftUnion(xly + ylx - ll, xry + yrx - rr)
 	local r = rightUnion(xly + yrx - lr, ylx + xry - rl)
-	Surreal(l, r)
+	return Surreal(l, r)
 end
 
 function tryMulByAdding(x::Surreal, y::Surreal)

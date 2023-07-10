@@ -27,6 +27,7 @@ notLB(x) = !(x isa SubSe && isTerm(x) && operation(x) == lb_s)
 
 isSurreal(x) = x isa Surreal
 
+notTrivialZero(x) = !(x isa Surreal && isZeroFast(x))
 
 function createRewriters()
 	simplificationRules = [
@@ -106,12 +107,17 @@ function createRewriters()
 	leRules = [
 		# try to postpone the problem
 		@rule le_s(~x::se(isSurreal), ~y::se(isSurreal)) => ~x < ~y
+		@rule le_s(S0, ~y) => allPositive(~y)
 
 		@rule le_s(~x::seNot(hasInfiniteElements), ~y::sc(isPosInfinite)) => true
 		@rule le_s(~x::seNot(hasUpperLimit), ~y::se(hasFiniteElements)) => false
 
 		@rule le_s(~x::sc(isNegInfinite), ~y::seNot(hasInfiniteElements)) => true
 		@rule le_s(~x::se(hasFiniteElements), ~y::seNot(hasLowerLimit)) => false
+
+		@rule le_s(ub_s(~x::se(notTrivialZero)), lb_s(~y)) => le_s(S0, ~y - ~x)
+		@rule le_s(ub_s(~x::se(notTrivialZero)), ~y) => le_s(S0, ~y - ~x)
+		@rule le_s(~x::se(notTrivialZero), ~y) => le_s(S0, ~y - ~x)
 
 		@rule le_s(n_s, ~y::sc(isPosInfinite)) => true
 	]

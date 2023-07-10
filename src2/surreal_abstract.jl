@@ -15,6 +15,8 @@ Base.:(<)(::SurrealSet, ::SurrealSet) = error("unimplemented; requires non-abstr
 Base.isless(x::SurrealSet, y::SurrealSet) = x < y
 Base.:(>)(x::SurrealSet, y::SurrealSet) = y < x
 
+-(x::SurrealSet, y::SurrealSet) = x + (-y)
+
 
 "same representation"
 function isequal(x::SurrealSet, y::SurrealSet)

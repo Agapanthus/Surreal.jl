@@ -30,7 +30,7 @@ for f in [
 	end)
 end
 
-_simplify(e) = autoSurrealSet(prettifyRewriter(simplifyRewriter(e)))
+_simplify(e)::Union{CountedSurrealSet, SingularSurrealSet} = autoSurrealSet(prettifyRewriter(simplifyRewriter(e)))
 
 function simplify(x::CountedSurrealSet, upper::Bool)
 	# in the upper half we are interested in the lower bound etc.
@@ -40,11 +40,13 @@ end
 
 -(x::CountedSurrealSet) = CountedSurrealSet(-x.e)
 
-@commu +(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(x.e + y)
-+(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e + y.e)
+@commu +(x::CountedSurrealSet, y::Surreal) = _simplify(x.e + y)
+@commu +(x::CountedSurrealSet, y::SingularSurrealSet) = _simplify(x.e + y.s)
++(x::CountedSurrealSet, y::CountedSurrealSet) = _simplify(x.e + y.e)
 
-@commu *(x::CountedSurrealSet, y::Surreal) = CountedSurrealSet(x.e * y)
-*(x::CountedSurrealSet, y::CountedSurrealSet) = CountedSurrealSet(x.e * y.e)
+@commu *(x::CountedSurrealSet, y::Surreal) = _simplify(x.e * y)
+@commu *(x::CountedSurrealSet, y::SingularSurrealSet) = _simplify(x.e * y.s)
+*(x::CountedSurrealSet, y::CountedSurrealSet) = _simplify(x.e * y.e)
 
 @commu leftUnion(x::CountedSurrealSet, y::SingularSurrealSet) = _simplify(ub_s(uu_s(x.e, y.s)))
 leftUnion(x::CountedSurrealSet, y::CountedSurrealSet) = _simplify(ub_s(uu_s(x.e, y.e)))

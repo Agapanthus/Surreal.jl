@@ -91,7 +91,7 @@ end
 
 *(a::SubSe) = a
 
-function *(a::SubSe, b::SubSe)::SubSe
+function *(a::SubSe, b::SubSe)::SubSePlus
 	# Always make sure Div wraps Mul
 	try
 		if isdiv(a) && isdiv(b)
@@ -122,7 +122,7 @@ function *(a::SubSe, b::SubSe)::SubSe
 	end
 end
 
-function *(a::Surreal, b::SubSe)::SubSe
+function *(a::Surreal, b::SubSe)::SubSePlus
 
 	try
 		if isZeroFast(a)
@@ -143,7 +143,7 @@ function *(a::Surreal, b::SubSe)::SubSe
 	end
 end
 
-*(a::SubSe, b::Surreal)::SubSe = b * a
+*(a::SubSe, b::Surreal)::SubSePlus = b * a
 
 ###
 ### Pow
