@@ -17,7 +17,7 @@ Base.show(io::IO, ::EmptySurrealSet) = print(io, "∅")
 isDyadic(::EmptySurrealSet) = true
 -(::EmptySurrealSet) = nil
 
-for f in [:lowerUnion, :upperUnion]
+for f in [:leftUnion, :rightUnion]
 	eval(quote
 		# this is commutative, i.e., it always returns the SurrealSet and not the empty one
 		@commu $f(x::EmptySurrealSet, y::SurrealSet) = y

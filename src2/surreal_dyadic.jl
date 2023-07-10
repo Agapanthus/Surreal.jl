@@ -110,19 +110,19 @@ function toFrac(x::Surreal, check::Bool = true)::MyRational
 
 	if isEmpty(x.L)
 		isEmpty(x.R) && return MyRational(0)
-		local r = min(1, toFrac(upperUnion([x.R]).s, false))
+		local r = min(1, toFrac(rightUnion([x.R]).s, false))
 		return MyRational(div(numerator(r), denominator(r)) - 1, 1)
 	end
 	if isEmpty(x.R)
-		@assert lowerUnion([x.L]) isa SingularSurrealSet
-		local l = max(-1, toFrac(lowerUnion([x.L]).s, false))
+		@assert leftUnion([x.L]) isa SingularSurrealSet
+		local l = max(-1, toFrac(leftUnion([x.L]).s, false))
 		return MyRational(div(numerator(l), denominator(l)) + 1, 1)
 	end
 
-	@assert lowerUnion([x.L]) isa SingularSurrealSet
-	@assert upperUnion([x.R]) isa SingularSurrealSet
-	local l = lowerUnion([x.L]).s
-	local r = upperUnion([x.R]).s
+	@assert leftUnion([x.L]) isa SingularSurrealSet
+	@assert rightUnion([x.R]) isa SingularSurrealSet
+	local l = leftUnion([x.L]).s
+	local r = rightUnion([x.R]).s
 
 	if isNegative(l)
 		# different sides -> zero!

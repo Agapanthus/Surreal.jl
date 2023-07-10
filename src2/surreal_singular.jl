@@ -14,8 +14,8 @@ Base.show(io::IO, x::SingularSurrealSet) = print(io, x.s)
 @passDownType (x -> x.s) SingularSurrealSet Surreal true (+(x, y) = SingularSurrealSet(x + y))
 @passDownType (x -> x.s) SingularSurrealSet Surreal true (*(x, y) = SingularSurrealSet(x * y))
 
-lowerUnion(x::SingularSurrealSet, y::SingularSurrealSet) = max(x, y)
-upperUnion(x::SingularSurrealSet, y::SingularSurrealSet) = min(x, y)
+leftUnion(x::SingularSurrealSet, y::SingularSurrealSet) = max(x, y)
+rightUnion(x::SingularSurrealSet, y::SingularSurrealSet) = min(x, y)
 
 isDyadic(x::SingularSurrealSet) = isDyadic(x.s)
 birthday(x::SingularSurrealSet) = birthday(x.s)

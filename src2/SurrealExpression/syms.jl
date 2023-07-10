@@ -8,13 +8,45 @@ SymbolicUtils.:(<ₑ)(a::Surreal, b::Symbolic) = true
 @syms n_s::SurrealExpression
 @syms omega_s::SurrealExpression
 
-# lower union 
+# lower union (interested in lower bounds, usually right side)
 @syms lu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
+
+# upper union (interested in upper bounds, usually left side)
 @syms uu_s(x::SurrealExpression, y::SurrealExpression)::SurrealExpression
 
+@syms le_s(x::SurrealExpression, y::SurrealExpression)::Bool
+@syms leq_s(x::SurrealExpression, y::SurrealExpression)::Bool
+
+# only interested in the upper bound
+@syms ub_s(x::SurrealExpression)::SurrealExpression
+
+# only interested in the lower bound
+@syms lb_s(x::SurrealExpression)::SurrealExpression
+
 const SubSe = SymbolicUtils.BasicSymbolic{SurrealExpression}
+const SubSePlus = Union{SubSe, Surreal}
 SymbolicUtils.zero(::Surreal) = S0
 SymbolicUtils.one(::Surreal) = S1
+
+function try_ub_s(x::SubSePlus)::SubSe
+	if isTerm(x)
+		if operation(x) == ub_s
+			return x
+		end
+		@assert operation(x) != lb_s
+	end
+	return ub_s(x)
+end
+
+function try_lb_s(x::SubSePlus)::SubSe
+	if isTerm(x)
+		if operation(x) == lb_s
+			return x
+		end
+		@assert operation(x) != ub_s
+	end
+	return lb_s(x)
+end
 
 function SymbolicUtils.similarterm(t::SubSe, f, args, symtype; metadata = nothing)
 
@@ -25,14 +57,13 @@ function SymbolicUtils.similarterm(t::SubSe, f, args, symtype; metadata = nothin
 	end
 	T = symtype
 
-	if (f in (+, *)) || (f in (/, ^, lu_s, uu_s) && length(args) == 2)
+	if (f in (+, *)) || (f in (/, ^, lu_s, uu_s) && length(args) == 2) || (f in (ub_s, lb_s) && length(args) == 1)
 		res = f(args...)
 		if res isa Symbolic
 			SymbolicUtils.@set! res.metadata = metadata
 		end
 		return res
 	end
-
 
 	@show t f args symtype
 	TODO
@@ -186,11 +217,32 @@ function Base.show(io::IO, e::SubSe)
 				printFactor(io, arg..., i > 1)
 			end
 		end
-		:lu_s => print(io, left(e), "∪", right(e))
-		:uu_s => print(io, left(e), "∩", right(e))
+		:lu_s => print(io, left(e), "⩁", right(e))
+		:uu_s => print(io, left(e), "⩂", right(e))
+		:le_s => print(io, left(e), "<", right(e))
+		:leq_s => print(io, left(e), "<=", right(e))
 		:n_s => print(io, "n")
-		:n => print(io, "n")
+		:ub_s => print(io, "U(", left(e), ")")
+		:lb_s => print(io, "L(", left(e), ")")
 		:omega_s => print(io, "ω")
 		_ => @assert false typeofSubSe(e)
 	end
+end
+
+function <(x::SubSePlus, y::SubSePlus)
+	#archimedeanClass(x)
+
+	local res = simplifyRewriter(le_s(ub_s(x), lb_s(y)))
+	res === true && return true
+	res === false && return false
+	@show x y res
+	TODO
+end
+
+function <=(x::SubSePlus, y::SubSePlus)
+	local res = simplifyRewriter(leq_s(ub_s(x), lb_s(y)))
+	res === true && return true
+	res === false && return false
+	@show x y res
+	TODO
 end

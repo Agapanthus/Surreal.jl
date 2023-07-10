@@ -5,13 +5,13 @@ abstract type SurrealSet end
 autoSurrealSet(x::SurrealSet)::SurrealSet = x
 
 # default implementations
-Base.:(<=)(x::SurrealSet, y::SurrealSet) = TODO
+Base.:(<=)(::SurrealSet, ::SurrealSet) = error("unimplemented; requires non-abstract types")
 Base.:(>=)(x::SurrealSet, y::SurrealSet) = y <= x
 "equivalent, i.e., same equivalence class"
 equiv(x::SurrealSet, y::SurrealSet) = x == y || (y <= x && x <= y)
 "equivalent"
 ≅(x::SurrealSet, y::SurrealSet) = equiv(x, y)
-Base.:(<)(x::SurrealSet, y::SurrealSet) = TODO
+Base.:(<)(::SurrealSet, ::SurrealSet) = error("unimplemented; requires non-abstract types")
 Base.isless(x::SurrealSet, y::SurrealSet) = x < y
 Base.:(>)(x::SurrealSet, y::SurrealSet) = y < x
 
@@ -26,10 +26,10 @@ Base.:(!=)(x::SurrealSet, y::SurrealSet) = !isequal(x, y)
 "same representation"
 Base.:(==)(x::SurrealSet, y::SurrealSet) = isequal(x, y)
 
-@inline lowerUnion(x::SurrealSet) = x
-@inline upperUnion(x::SurrealSet) = x
-@inline lowerUnion(x::Vector) = lowerUnion(reduce(lowerUnion, x))
-@inline upperUnion(x::Vector) = upperUnion(reduce(upperUnion, x))
+@inline leftUnion(x::SurrealSet) = x
+@inline rightUnion(x::SurrealSet) = x
+@inline leftUnion(x::Vector) = leftUnion(reduce(leftUnion, x))
+@inline rightUnion(x::Vector) = rightUnion(reduce(rightUnion, x))
 
 
 @inline isLimited(x::SurrealSet)::Bool = hasUpperLimit(x) && hasLowerLimit(x)

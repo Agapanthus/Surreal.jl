@@ -32,7 +32,7 @@ for f in [:+, :*]
 	end)
 end
 
-for f in [:lowerUnion, :upperUnion]
+for f in [:leftUnion, :rightUnion]
 	eval(quote
 		@passDownType (x -> x.v) VectorSurrealSet SurrealSet true ($f(x, y) = $f([x..., y...]))
 		@commu $f(::EmptySurrealSet, ::VectorSurrealSet) = nil
@@ -41,4 +41,4 @@ for f in [:lowerUnion, :upperUnion]
 end
 
 birthday(x::VectorSurrealSet) = maximum(birthday.(x.v))
-simplify(x::VectorSurrealSet, upper::Bool) = upper ? simplify(upperUnion(x.v), upper) : simplify(lowerUnion(x.v), upper)
+simplify(x::VectorSurrealSet, upper::Bool) = upper ? simplify(rightUnion(x.v), upper) : simplify(leftUnion(x.v), upper)

@@ -56,6 +56,10 @@ function Base.show(io::IO, x::Surreal)
 		else
 			print(io, numerator(f), "/", denominator(f))
 		end
+	elseif isOmegaFast(x)
+		print(io, "ω")
+	elseif isMinusOmegaFast(x)
+		print(io, "-ω")
 	else
 		show2(io, x)
 	end
@@ -76,21 +80,24 @@ function simplify(x::Surreal)
 end
 
 
-function +(x::Surreal, y::Surreal)::Surreal
+"add, only using the naive defintion"
+function addDirect(x::Surreal, y::Surreal)::Surreal
+	local l = leftUnion(x.L + y, y.L + x)
+	local r = rightUnion(y + x.R, x + y.R)
+	return Surreal(l, r)
+end
+
+"add, but try to use tricks to be fast"
+function add(x::Surreal, y::Surreal)::Surreal
 	if isDyadic(x) && isDyadic(y)
 		return Surreal(toFrac(x) + toFrac(y))
 	end
 
-	Surreal(lowerUnion(x.L + y, y.L + x), upperUnion(y + x.R, x + y.R))
+	addDirect(x, y)
 end
-+(x::Surreal) = x
--(x::Surreal) = Surreal(-x.R, -x.L)
--(x::Surreal, y::Surreal)::Surreal = x + (-y)
-*(x::Surreal, y::Surreal)::Surreal = begin
-	if isDyadic(x) && isDyadic(y)
-		return Surreal(toFrac(x) * toFrac(y))
-	end
 
+"multiply, only using the naive defintion"
+function mulDirect(x::Surreal, y::Surreal)::Surreal
 	@show x y
 	TODO
 	local xly = x.L * y
@@ -101,10 +108,25 @@ end
 	local rr = x.R * y.R
 	local lr = x.L * y.R
 	local rl = x.R * y.L
-	local l = lowerUnion(xly + ylx - ll, xry + yrx - rr)
-	local r = upperUnion(xly + yrx - lr, ylx + xry - rl)
+	local l = leftUnion(xly + ylx - ll, xry + yrx - rr)
+	local r = rightUnion(xly + yrx - lr, ylx + xry - rl)
 	Surreal(l, r)
 end
+
+"multiply, try to use tricks to be fast"
+function mul(x::Surreal, y::Surreal)::Surreal
+	if isDyadic(x) && isDyadic(y)
+		return Surreal(toFrac(x) * toFrac(y))
+	end
+
+	return mulDirect(x, y)
+end
+
++(x::Surreal, y::Surreal) = add(x, y)
++(x::Surreal) = x
+-(x::Surreal) = Surreal(-x.R, -x.L)
+-(x::Surreal, y::Surreal)::Surreal = x + (-y)
+*(x::Surreal, y::Surreal)::Surreal = mul(x, y)
 
 for f in [:+, :*, :-, :<, :<=, :≅, :≇, :equiv]
 	eval(quote
@@ -147,6 +169,8 @@ function isFinite(x::Surreal)
 	return (isPositive(x) && hasUpperLimit(x.L)) || (isNegative(x) && hasLowerLimit(x.R))
 end
 isInfinite(x::Surreal) = !isFinite(x)
+isPosInfinite(x::Surreal) = isInfinite(x) && isPositive(x)
+isNegInfinite(x::Surreal) = isInfinite(x) && isNegative(x)
 hasLowerLimit(x::Surreal) = isPositive(x) || isFinite(x)
 hasUpperLimit(x::Surreal) = isNegative(x) || isFinite(x)
 hasFiniteElements(x::Surreal) = isFinite(x)
@@ -161,7 +185,7 @@ Base.iterate(x::Surreal, ::Nothing) = nothing
 "true if it is omega, false if not sure"
 function isOmegaFast(x::Surreal)
 	x == omega && return true
-	isInfinite(x) || return false
+	#isInfinite(x) || return false
 	#isPositive(x) || return false
 
 	return false
@@ -170,7 +194,7 @@ end
 "true if it is -omega, false if not sure"
 function isMinusOmegaFast(x::Surreal)
 	x == -omega && return true
-	isInfinite(x) || return false
+	#isInfinite(x) || return false
 	#isNegative(x) || return false
 
 	return false

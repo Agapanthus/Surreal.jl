@@ -28,7 +28,6 @@ end
 "true, iff there is a finite number larger or equal to every element in e"
 function hasUpperLimit(e::SubSe)::Bool
 	@match typeofSubSe(e) begin
-		
 		:add => begin
 			local ul = map(iterateAdd(e)) do (factor, v)
 				@assert isFinite(factor)
@@ -37,7 +36,7 @@ function hasUpperLimit(e::SubSe)::Bool
 				return hasUpperLimit(v), hasFiniteElements(v)
 			end
 			# all limited -> definitely a limit
-			all(last, ul) && return true
+			all(first, ul) && return true
 
 			# all are positively infinite or have limited elements -> no limit
 			all(x -> !first(x) || last(x), ul) && return false
@@ -47,7 +46,8 @@ function hasUpperLimit(e::SubSe)::Bool
 		:X_s => return isNegative(left(e)) || isFinite(left(e))
 		:n_s => return false
 		:omega_s => return false
-		:lu_s => return hasUpperLimit(left(e)) && hasUpperLimit(right(e))
+		:uu_s => return hasUpperLimit(left(e)) && hasUpperLimit(right(e))
+		:ub_s => return hasUpperLimit(left(e))
 		_ => @assert false typeofSubSe(e)
 	end
 end
@@ -87,6 +87,8 @@ function hasLowerLimit(e::SubSe)::Bool
 
 		:n_s => return true
 		:omega_s => return true
+		:lb_s => return hasLowerLimit(left(e))
+
 		_ => @assert false typeofSubSe(e)
 	end
 end
@@ -98,6 +100,23 @@ function hasFiniteElements(e::SubSe)
 		:X_s => return isFinite(left(e))
 		:n_s => return true
 		:omega_s => return false
+		:add => begin
+			local ul = map(iterateAdd(e)) do (factor, v)
+				@assert isFinite(factor)
+				@assert isPositive(factor)
+				@assert !isZeroFast(factor)
+				return hasFiniteElements(v)
+			end
+			# all have finite elements -> definitely still have those
+			all(ul) && return true
+
+			TODO
+		end
+
+		# can be ignored; they are only hints
+		:ub_s => return hasFiniteElements(left(e))
+		:lb_s => return hasFiniteElements(left(e))
+
 		_ => @assert false typeofSubSe(e)
 	end
 end
