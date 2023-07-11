@@ -134,7 +134,7 @@ function createRewriters()
 		@rule le_s(~x::se(notTrivialZero), ~y) => le_s(S0, ~y - ~x)
 		=#
 
-		@rule le_s(n_s, ~y::sc(isPosInfinite)) => true
+		@rule isPos_s(n_s, ~y::sc(isPosInfinite)) => true
 	]
 
 

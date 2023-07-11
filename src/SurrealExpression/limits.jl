@@ -113,6 +113,8 @@ function allPositive(e::SubSe)::Bool
 
 			any(allPosInfinite, vs) && all(hasntNegInfinite, vs) && return true
 
+			
+
 			@show vs
 			TODO
 		end
