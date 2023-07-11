@@ -72,6 +72,8 @@ function runTests()
 	end
 
 	@assert simplify(1 // 2 * omega) == Surreal(n_s, omega_s - n_s)
+
+	@assert omega * S0 == S0
 	
 	#@assert confident(equiv(-omega + 1 // 2 - 1 // 2, -omega))
 
