@@ -3,7 +3,9 @@
 "show errors"
 function se(f)
 	return x -> try
-		return f(x)
+		local res = f(x)
+	 	res isa MaybeBool && return Bool(res)
+		return res
 	catch err
 		showerror(stdout, err)
 		#display(stacktrace(catch_backtrace()))
@@ -118,9 +120,13 @@ function createRewriters()
 
 	# is positive
 	isPosRules = [
+
+		@rule isPos_s(~x::se(hasInfiniteElements), ~y::seNot(hasInfiniteElements)) => isPos_s(~x)
+		@rule isPos_s(~x::seNot(hasInfiniteElements), ~y::se(hasInfiniteElements)) => isPos_s(~y)
+
 		# try to postpone the problem
-		@rule isPos_s(~x::se(isSurreal)) => isPositive(~x)
-		@rule isPos_s(~y) => allPositive(~y)
+		#@rule isPos_s(~x::se(isSurreal)) => isPositive(~x)
+		#@rule isPos_s(~x) => allPositive(~x)
 
 		#=
 		@rule le_s(~x::seNot(hasInfiniteElements), ~y::sc(isPosInfinite)) => true
@@ -134,7 +140,7 @@ function createRewriters()
 		@rule le_s(~x::se(notTrivialZero), ~y) => le_s(S0, ~y - ~x)
 		=#
 
-		@rule isPos_s(n_s, ~y::sc(isPosInfinite)) => true
+		#@rule isPos_s(n_s, ~y::sc(isPosInfinite)) => Yes
 	]
 
 
@@ -176,4 +182,4 @@ function createRewriters()
 	simplifyRewriter, prettifyRewriter
 end
 
-simplifyRewriter, prettifyRewriter = createRewriters()
+@time simplifyRewriter, prettifyRewriter = createRewriters()

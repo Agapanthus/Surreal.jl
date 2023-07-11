@@ -5,8 +5,8 @@ end
 
 for T in [EmptySurrealSet, SurrealSet, Surreal]
 	eval(quote
-		@commu <(x::$(T), y::EmptySurrealSet) = true
-		@commu <=(x::$(T), y::EmptySurrealSet) = true
+		@commu <(x::$(T), y::EmptySurrealSet) = Yes
+		@commu <=(x::$(T), y::EmptySurrealSet) = Yes
 		@commu +(x::$(T), y::EmptySurrealSet) = nil
 		@commu *(x::$(T), y::EmptySurrealSet) = nil
 	end)
@@ -29,7 +29,7 @@ isEmpty(x::SurrealSet) = typeof(x) === EmptySurrealSet
 
 birthday(x::EmptySurrealSet) = -1
 
-hasUpperLimit(::EmptySurrealSet) = true
-hasLowerLimit(::EmptySurrealSet) = true
+hasUpperLimit(::EmptySurrealSet) = Yes
+hasLowerLimit(::EmptySurrealSet) = Yes
 
 simplify(::EmptySurrealSet, ::Bool) = nil

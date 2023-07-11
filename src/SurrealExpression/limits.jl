@@ -2,6 +2,7 @@
 "whether is a finite upper and lower limit, i.e., |N is not finite"
 isLimited(e::SubSe)::Bool = hasUpperLimit(e) && hasLowerLimit(e)
 
+#=
 "surreal least upper bound (larger or equal)"
 function getLUB(e::SubSe)::Surreal
 	@match typeofSubSe(e) begin
@@ -21,24 +22,32 @@ function getGLB(e::SubSe)::Surreal
 		_ => @assert false typeofSubSe(e)
 	end
 end
+=#
 
-
+function assertSimpleFactors(e)
+	for (factor, v) in iterateAdd(e)
+		@assert isDyadic(factor)
+		@assert isPositive(factor) == Yes
+		@assert isZero(factor) == No
+	end
+	return last.(iterateAdd(e))
+end
 
 "true, iff there is a finite number larger or equal to every element in e"
-function hasUpperLimit(e::SubSe)::Bool
+function hasUpperLimit(e::SubSe)::MaybeBool
+	
 	@match typeofSubSe(e) begin
 		:add => begin
-			local ul = map(iterateAdd(e)) do (factor, v)
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-				return hasUpperLimit(v), hasFiniteElements(v)
-			end
+			local vs = assertSimpleFactors(e)
+
 			# all limited -> definitely a limit
-			all(first, ul) && return true
+			+all2(hasUpperLimit, vs) && return Yes
 
 			# all are positively infinite or have limited elements -> no limit
-			all(x -> !first(x) || last(x), ul) && return false
+			+all2(x -> !hasUpperLimit(x) | hasFiniteElements(x), vs) && return No
 
-			TODO
+			@warn "hasUpperLimit" e
+			return Maybe
 		end
 		:mul => begin
 			local fs = iterateMul(e)
@@ -47,91 +56,102 @@ function hasUpperLimit(e::SubSe)::Bool
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
 				local x, y = fs[1][2], fs[2][2]
-				if isDyadic(x) && !isZero(x)
-					return isPositive(x) ? hasUpperLimit(y) : hasLowerLimit(y)
+				if isDyadic(x) && +!isZero(x)
+					return @trif isPositive(x) hasUpperLimit(y) Maybe hasLowerLimit(y)
 				end
 			end
 
-
-			@show fs
-			TODO
+			@warn "hasUpperLimit" fs
+			return Maybe
 		end
 
-		:n_s => return false
-		:omega_s => return false
-		:uu_s => return hasUpperLimit(left(e)) && hasUpperLimit(right(e))
+		:n_s => return No
+		:omega_s => return No
+		:uu_s => return @and hasUpperLimit(left(e)) hasUpperLimit(right(e))
 		:ub_s => return hasUpperLimit(left(e))
 		_ => @assert false typeofSubSe(e)
 	end
 end
 
-hasPosInfinite(x) = hasLowerLimit(x) && hasInfiniteElements(x)
-hasNegInfinite(x) = hasUpperLimit(x) && hasInfiniteElements(x)
-hasntPosInfinite(x) = hasUpperLimit(x) || !hasInfiniteElements(x)
-hasntNegInfinite(x) = hasLowerLimit(x) || !hasInfiniteElements(x)
-allPosInfinite(x) = allPositive(x) && !hasFiniteElements(x)
+hasPosInfinite(x) = @and hasLowerLimit(x) hasInfiniteElements(x)
+hasNegInfinite(x) = @and hasUpperLimit(x) hasInfiniteElements(x)
+hasntPosInfinite(x) = @or hasUpperLimit(x) !hasInfiniteElements(x)
+hasntNegInfinite(x) = @or hasLowerLimit(x) !hasInfiniteElements(x)
+allPosInfinite(x) = @and allPositive(x) !hasFiniteElements(x)
 
 
-function allNegative(e::SubSe)::Bool
+function allNegative(e::SubSe)::MaybeBool
 	@match typeofSubSe(e) begin
 		:add => begin
-			for (factor, v) in (iterateAdd(e))
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-			end
-			local vs = last.(iterateAdd(e))
+			local vs = assertSimpleFactors(e)
+			+all2(allNegative, vs) && return Yes
 
-			all(allNegative, vs) && return true
-
-			TODO
+			@warn e
+			return Maybe
 		end
 		:mul => begin
 			local fs = iterateMul(e)
 			isNeg(e) && return allPositive(fs[2][2])
 
-			@show fs
-			TODO
+			@warn fs
+			return Maybe
 		end
-		:n_s => return false
-		:omega_s => return false
+		:n_s => return No
+		:omega_s => return No
 		:lb_s => return allNegative(left(e))
 		:ub_s => return allNegative(left(e))
 		_ => @assert false typeofSubSe(e)
 	end
 end
 
+hasNegative(s::SubSe)::MaybeBool = @and !allPositive(s) !allZero(s)
+hasPositive(s::SubSe)::MaybeBool = @and !allNegative(s) !allZero(s)
 
+function allZero(e::SubSe)::MaybeBool
+	@match typeofSubSe(e) begin
+		:mul => begin
+			local fs = iterateMul(e)
+			for (exponent, value) in fs
+				@trif (@and !isZero(exponent) isZero(value)) (return Yes) (return Maybe) continue
+			end
+			return No
+		end
+		:n_s => return No
+		:omega_s => return No
+		:lb_s => return allZero(left(e))
+		:ub_s => return allZero(left(e))
+		_ => @assert false typeofSubSe(e)
+	end
+end
 
-function allPositive(e::SubSe)::Bool
+function allPositive(e::SubSe)::MaybeBool
 	@match typeofSubSe(e) begin
 		:add => begin
-			for (factor, v) in (iterateAdd(e))
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-			end
-			local vs = last.(iterateAdd(e))
+			local vs = assertSimpleFactors(e)
 
-			all(allPositive, vs) && return true
+			+all2(allPositive, vs) && return Yes
 
-			any(allPosInfinite, vs) && all(hasntNegInfinite, vs) && return true
+			+any2(allPosInfinite, vs) && +all2(hasntNegInfinite, vs) && return Yes
 
-			
+			+all2(hasNegative, vs) && return No
 
-			@show vs
-			TODO
+			@warn vs
+			return Maybe
 		end
 		:mul => begin
 			local fs = iterateMul(e)
 			isNeg(e) && return allNegative(fs[2][2])
 
 			if length(fs) == 2 && fs[1][1] == S1 && isDyadic(fs[1][2]) && fs[2][1] == S1
-				isPositive(fs[1][2]) && return allPositive(fs[2][2])
-				isNegative(fs[1][2]) && return allNegative(fs[2][2])
+				+isPositive(fs[1][2]) && return allPositive(fs[2][2])
+				+isNegative(fs[1][2]) && return allNegative(fs[2][2])
 			end
 
-			@show fs
-			TODO
+			@warn fs
+			return Maybe
 		end
-		:n_s => return true
-		:omega_s => return true
+		:n_s => return Yes
+		:omega_s => return Yes
 		:lb_s => return allPositive(left(e))
 		:ub_s => return allPositive(left(e))
 		_ => @assert false typeofSubSe(e)
@@ -140,27 +160,22 @@ end
 
 
 "true, iff there is a finite number smaller than every element in e"
-function hasLowerLimit(e::SubSe)::Bool
+function hasLowerLimit(e::SubSe)::MaybeBool
 	@match typeofSubSe(e) begin
 		:add => begin
-			local ul = map(iterateAdd(e)) do (factor, v)
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-				return hasLowerLimit(v), hasFiniteElements(v)
-			end
-			local vs = last.(iterateAdd(e))
+			local vs = assertSimpleFactors(e)
 
 			# all limited -> definitely a limit
-			all(first, ul) && return true
+			+all2(hasLowerLimit, vs) && return Yes
 
 			# all are negatively infinite or have limited elements -> no limit
-			all(x -> !first(x) || last(x), ul) && return false
+			+all2(x -> !hasLowerLimit(x) | hasFiniteElements(x), vs) && return No
 
 			# there is a pos infinite and others aren't negative infinite
-			any(hasPosInfinite, vs) && all(hasntNegInfinite, vs) && return true
+			+any2(hasPosInfinite, vs) && +all2(hasntNegInfinite, vs) && return Yes
 
-			@show ul
-			@show iterateAdd(e)
-			TODO
+			@warn vs, iterateAdd(e)
+			return Maybe
 		end
 		:mul => begin
 			local fs = iterateMul(e)
@@ -169,17 +184,17 @@ function hasLowerLimit(e::SubSe)::Bool
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
 				local x, y = fs[1][2], fs[2][2]
-				if isDyadic(x) && !isZero(x)
-					return isPositive(x) ? hasLowerLimit(y) : hasUpperLimit(y)
+				if isDyadic(x) && +!isZero(x)
+					return @trif isPositive(x) hasLowerLimit(y) Maybe hasUpperLimit(y)
 				end
 			end
 
-			@show fs
-			TODO
+			@warn fs
+			return Maybe
 		end
 
-		:n_s => return true
-		:omega_s => return true
+		:n_s => return Yes
+		:omega_s => return Yes
 		:lb_s => return hasLowerLimit(left(e))
 
 		_ => @assert false typeofSubSe(e)
@@ -187,24 +202,22 @@ function hasLowerLimit(e::SubSe)::Bool
 end
 
 "true, iff the set contains finite elements"
-function hasFiniteElements(e::SubSe)
+function hasFiniteElements(e::SubSe)::MaybeBool
 	@match typeofSubSe(e) begin
 		#:neg_s => return hasFiniteElements(left(e))
-		:n_s => return true
-		:omega_s => return false
+		:n_s => return Yes
+		:omega_s => return No
 		:add => begin
-			local ul = map(iterateAdd(e)) do (factor, v)
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-				return hasFiniteElements(v)
-			end
+			local vs = assertSimpleFactors(e)
+
 			# all have finite elements -> definitely still have those
-			all(ul) && return true
+			all2(hasFiniteElements, vs) && return Yes
 
 			# exactly one has no finite elements
-			sum(ul) == 1 && return false
+			sum(map(x -> @trif hasFiniteElements(x) 0 10 1), vs) == 1 && return No
 
-			@show iterateAdd(e)
-			TODO
+			@warn iterateAdd(e)
+			return Maybe
 		end
 
 		:mul => begin
@@ -214,12 +227,11 @@ function hasFiniteElements(e::SubSe)
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
 				local x, y = fs[1][2], fs[2][2]
-				if isFinite(x)
-					return hasFiniteElements(y)
-				end
+				+isFinite(x) && return hasFiniteElements(y)
 			end
 
-			TODO
+			@warn e
+			return Maybe
 		end
 
 		# can be ignored; they are only hints
@@ -232,24 +244,21 @@ end
 
 
 "true, iff the set contains infinite elements"
-function hasInfiniteElements(e::SubSe)
+function hasInfiniteElements(e::SubSe)::MaybeBool
 	@match typeofSubSe(e) begin
-		#:neg_s => return hasFiniteElements(left(e))
-		:n_s => return false
-		:omega_s => return true
+		:n_s => return No
+		:omega_s => return Yes
 		:add => begin
-			local ul = map(iterateAdd(e)) do (factor, v)
-				@assert isDyadic(factor) && isPositive(factor) && !isZero(factor)
-				return hasInfiniteElements(v)
-			end
+			local vs = assertSimpleFactors(e)
+
 			# exactly one has infinite elements -> definitely still have those
-			(sum(ul) == 1) && return true
+			(sum(map(x -> (@trif hasInfiniteElements(x) 1 10 0), vs)) == 1) && return Yes
 
 			# none has infinite elements -> still none
-			all(not, ul) && return false
+			+all2(x -> !hasInfiniteElements(x), vs) && return No
 
-
-			TODO
+			@warn e
+			return Maybe
 		end
 
 		:mul => begin
@@ -259,12 +268,11 @@ function hasInfiniteElements(e::SubSe)
 			if length(fs) == 2 && all(x -> first(x) == 1, fs)
 				# no exponents, just two factors
 				local x, y = fs[1][2], fs[2][2]
-				if isDyadic(x) && !isZero(x)
-					return hasInfiniteElements(y)
-				end
+				isDyadic(x) && +!isZero(x) && return hasInfiniteElements(y)
 			end
 
-			TODO
+			@warn e
+			return Maybe
 		end
 
 		# can be ignored; they are only hints

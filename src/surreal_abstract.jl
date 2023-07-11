@@ -6,17 +6,19 @@ autoSurrealSet(x::SurrealSet)::SurrealSet = x
 
 # default implementations
 Base.:(<=)(::SurrealSet, ::SurrealSet) = error("unimplemented; requires non-abstract types")
-Base.:(>=)(x::SurrealSet, y::SurrealSet) = y <= x
+Base.:(>=)(x::SurrealSet, y::SurrealSet)::MaybeBool = y <= x
 "equivalent, i.e., same equivalence class"
-equiv(x::SurrealSet, y::SurrealSet) = x == y || (y <= x && x <= y)
+equiv(x::SurrealSet, y::SurrealSet)::MaybeBool = x == y || (y <= x && x <= y)
 "equivalent"
-≅(x::SurrealSet, y::SurrealSet) = equiv(x, y)
+≅(x::SurrealSet, y::SurrealSet)::MaybeBool = equiv(x, y)
 Base.:(<)(::SurrealSet, ::SurrealSet) = error("unimplemented; requires non-abstract types")
-Base.isless(x::SurrealSet, y::SurrealSet) = x < y
-Base.:(>)(x::SurrealSet, y::SurrealSet) = y < x
+Base.isless(x::SurrealSet, y::SurrealSet)::MaybeBool = x < y
+Base.:(>)(x::SurrealSet, y::SurrealSet)::MaybeBool = y < x
+
+Base.max(x::SurrealSet, y::SurrealSet) = @trif x > y x error("no max") y
+Base.min(x::SurrealSet, y::SurrealSet) = @trif x < y x error("no min") y
 
 -(x::SurrealSet, y::SurrealSet) = x + (-y)
-
 
 "same representation"
 function isequal(x::SurrealSet, y::SurrealSet)
@@ -33,9 +35,8 @@ Base.:(==)(x::SurrealSet, y::SurrealSet) = isequal(x, y)
 @inline leftUnion(x::Vector) = leftUnion(reduce(leftUnion, x))
 @inline rightUnion(x::Vector) = rightUnion(reduce(rightUnion, x))
 
-
-@inline isLimited(x::SurrealSet)::Bool = hasUpperLimit(x) && hasLowerLimit(x)
-@inline isUnlimited(x::SurrealSet)::Bool = !isLimited(x)
+@inline isLimited(x::SurrealSet)::MaybeBool = hasUpperLimit(x) && hasLowerLimit(x)
+@inline isUnlimited(x::SurrealSet)::MaybeBool = !isLimited(x)
 
 @inline Base.length(::SurrealSet) = 1
 @inline Base.iterate(x::SurrealSet) = (x, nothing)

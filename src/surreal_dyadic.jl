@@ -124,9 +124,9 @@ function toFrac(x::Surreal, check::Bool = true)::MyRational
 	local l = leftUnion([x.L]).s
 	local r = rightUnion([x.R]).s
 
-	if isNegative(l)
+	if confident(isNegative(l))
 		# different sides -> zero!
-		isPositive(r) && return 0
+		confident(isPositive(r)) && return 0
 
 		# TODO: don't recurse with (-), but do this directly for efficiency
 		# both non-positive:

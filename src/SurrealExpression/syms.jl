@@ -176,7 +176,7 @@ end
 
 
 "negation, i.e., -1 * x"
-function isNeg(e, f = x -> x == SM1)
+function isNeg(e, f = x -> x == SM1)::Bool
 	e isa SubSe && isMul(e) || return false
 	local fs = iterateMul(e)
 	return length(fs) == 2 && fs[1][1] == (S1) && isDyadic(fs[1][2]) && f(fs[1][2]) && fs[2][1] == S1
@@ -184,7 +184,7 @@ end
 
 function printSummand(io::IO, factor, v, forceSign::Bool = false)
 	if factor == S1
-		if isNeg(v, isNegative)
+		if isNeg(v, x -> confident(isNegative(x)))
 			local (_, factor2), (_, v2) = iterateMul(v)
 			if factor2 == SM1
 				print(io, "-", v2)
@@ -244,19 +244,24 @@ function Base.show(io::IO, e::SubSe)
 	end
 end
 
-function <(x::SubSePlus, y::SubSePlus)
+function <(x::SubSePlus, y::SubSePlus)::MaybeBool
 	#archimedeanClass(x)
 
 	local res = simplifyRewriter(isPos_s(lb_s(y - x)))
-	res === true && return true
-	res === false && return false
-	@show x y res
-	TODO
+	res === Yes && return Yes
+	res === No && return No
+
+	@assert isTerm2(res) && operation(res) == isPos_s
+	local a = arguments(res)[1]
+	@trif allPositive(a) (return Yes) Maybe (return No)
+
+	@warn x, y, res
+	return Maybe
 end
 
-function <=(x::SubSePlus, y::SubSePlus)
-	x < y && return true
+function <=(x::SubSePlus, y::SubSePlus)::MaybeBool
+	+(x < y) && return Yes
 
-	@show x y res
-	TODO
+	@warn x, y, res
+	return Maybe
 end

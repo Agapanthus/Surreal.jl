@@ -17,7 +17,7 @@ Base.show(io::IO, x::SingularSurrealSet) = print(io, x.s)
 leftUnion(x::SingularSurrealSet, y::SingularSurrealSet) = max(x, y)
 rightUnion(x::SingularSurrealSet, y::SingularSurrealSet) = min(x, y)
 
-isDyadic(x::SingularSurrealSet) = isDyadic(x.s)
+isDyadic(x::SingularSurrealSet)::Bool = isDyadic(x.s)
 birthday(x::SingularSurrealSet) = birthday(x.s)
 simplify(x::SingularSurrealSet, ::Bool) = simplify(x.s)
 

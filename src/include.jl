@@ -1,7 +1,9 @@
 using Match
 
+include("maybe.jl")
 include("rule.jl")
 
+using ErrorTypes
 import Base.(<=), Base.isequal, Base.(<), Base.(^), Base.(+), Base.(-), Base.(*), Base.(/)
 
 include("surreal_abstract.jl")

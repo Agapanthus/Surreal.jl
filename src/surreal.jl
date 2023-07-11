@@ -7,21 +7,29 @@ struct Surreal <: SurrealExpression
 		local l = autoSurrealSet(L)
 		local r = autoSurrealSet(R)
 		# TODO: make a macro like "@inbounds" to turn this off
-		check && @assert l < r "rule 1: l < r violated by $(l) and $(r)"
+		if check
+			local res = l < r
+			if res == No
+				error("rule 1: l < r violated by $(l) and $(r)")
+			elseif res == Maybe
+				warn("_Possibly_ rule 1: l < r violated by $(l) and $(r)")
+			end
+		end
+
 		new(l, r)
 	end
 end
 
 @inline Surreal(x::Surreal) = x
 
-<=(x::Surreal, y::Surreal) = x.L < y && x < y.R
-Base.:(>=)(x::Surreal, y::Surreal) = y <= x
-Base.:(<)(x::Surreal, y::Surreal) = x <= y && !(y <= x)
-Base.isless(x::Surreal, y::Surreal) = x < y
-Base.:(>)(x::Surreal, y::Surreal) = y < x
+<=(x::Surreal, y::Surreal)::MaybeBool = @and (x.L < y) (x < y.R)
+Base.:(>=)(x::Surreal, y::Surreal)::MaybeBool = y <= x
+Base.:(<)(x::Surreal, y::Surreal)::MaybeBool = @and (x <= y) (!(y <= x))
+Base.isless(x::Surreal, y::Surreal)::MaybeBool = x < y
+Base.:(>)(x::Surreal, y::Surreal)::MaybeBool = y < x
 
 "same equivalence class"
-equiv(x::Surreal, y::Surreal) = y <= x && x <= y
+equiv(x::Surreal, y::Surreal)::MaybeBool = @and (y <= x) (x <= y)
 "same equivalence class"
 ≅(x::Surreal, y::Surreal) = equiv(x, y)
 "not same equivalence class"
@@ -70,7 +78,7 @@ function Base.show(io::IO, x::Surreal)
 end
 
 "whether it is a finite representation of dyadic fraction. A simplify could transform a representation to a finite dyadic"
-isDyadic(x::Surreal) = isDyadic(x.L) && isDyadic(x.R)
+isDyadic(x::Surreal)::Bool = isDyadic(x.L) && isDyadic(x.R)
 
 "convert to the first representation generated for this number"
 function simplify(x::Surreal)
@@ -156,6 +164,9 @@ end
 -(x::Surreal, y::Surreal)::Surreal = x + (-y)
 *(x::Surreal, y::Surreal)::Surreal = mul(x, y)
 
+Base.max(x::Surreal, y::Surreal) = @trif x > y x error("max not possible") y
+Base.min(x::Surreal, y::Surreal) = @trif x < y x error("min not possible") y
+
 for f in [:+, :*, :-, :<, :<=, :≅, :≇, :equiv]
 	eval(quote
 		@passDownType Surreal Int64 Surreal false ($f(x, y) = $f(x, y))
@@ -181,29 +192,33 @@ end
 /(x::Surreal, y::Surreal)::Surreal = x * inv(y)
 
 "strictly negative"
-isNegative(x::Surreal) = x < S0
+isNegative(x::Surreal)::MaybeBool = x < S0
 
 "strictly positive"
-isPositive(x::Surreal) = x > S0 # TODO: more efficient recursion: isPositive(x.L)
+isPositive(x::Surreal)::MaybeBool = x > S0 # TODO: more efficient recursion: isPositive(x.L)
 
 # TODO: make this more efficient
-isZero(x::Surreal) = equiv(x, S0)
+isZero(x::Surreal)::MaybeBool = equiv(x, S0)
 
-isZeroFast(x::Surreal) = isDyadic(x) && toFrac(x) == 0
-isOneFast(x::Surreal) = isDyadic(x) && toFrac(x) == 1
+isZeroFast(x::Surreal)::Bool = isDyadic(x) && toFrac(x) == 0
+isOneFast(x::Surreal)::Bool = isDyadic(x) && toFrac(x) == 1
 
-function isFinite(x::Surreal)
-	isDyadic(x) && return true
-	return (isPositive(x) && hasUpperLimit(x.L)) || (isNegative(x) && hasLowerLimit(x.R))
+function isFinite(x::Surreal)::MaybeBool
+	isDyadic(x) && return Yes
+	return @or (@and isPositive(x) hasUpperLimit(x.L)) (@and isNegative(x) hasLowerLimit(x.R))
 end
-isInfinite(x::Surreal) = !isFinite(x)
-isPosInfinite(x::Surreal) = isInfinite(x) && isPositive(x)
-isNegInfinite(x::Surreal) = isInfinite(x) && isNegative(x)
-hasLowerLimit(x::Surreal) = isPositive(x) || isFinite(x)
-hasUpperLimit(x::Surreal) = isNegative(x) || isFinite(x)
-hasFiniteElements(x::Surreal) = isFinite(x)
-hasInfiniteElements(x::Surreal) = isInfinite(x)
-allPositive(x::Surreal) = isPositive(x)
+isInfinite(x::Surreal)::MaybeBool = !isFinite(x)
+isPosInfinite(x::Surreal)::MaybeBool = @and isInfinite(x) isPositive(x)
+isNegInfinite(x::Surreal)::MaybeBool = @and isInfinite(x) isNegative(x)
+hasLowerLimit(x::Surreal)::MaybeBool = @or isPositive(x) isFinite(x)
+hasUpperLimit(x::Surreal)::MaybeBool = @or isNegative(x) isFinite(x)
+hasFiniteElements(x::Surreal)::MaybeBool = isFinite(x)
+hasInfiniteElements(x::Surreal)::MaybeBool = isInfinite(x)
+allPositive(x::Surreal)::MaybeBool = isPositive(x)
+allNegative(x::Surreal)::MaybeBool = isNegative(x)
+hasPositive(x::Surreal)::MaybeBool = isNegative(x)
+hasNegative(x::Surreal)::MaybeBool = isNegative(x)
+allZero(x::Surreal)::MaybeBool = isZero(x)
 
 "birthday of this representation (not the representant of the equivalence group)"
 birthday(x::Surreal) = max(birthday(x.L), birthday(x.R)) + 1
@@ -213,7 +228,7 @@ Base.iterate(x::Surreal) = (x, nothing)
 Base.iterate(x::Surreal, ::Nothing) = nothing
 
 "true if it is omega, false if not sure"
-function isOmegaFast(x::Surreal)
+function isOmegaFast(x::Surreal)::Bool
 	x == omega && return true
 	#isInfinite(x) || return false
 	#isPositive(x) || return false
@@ -222,7 +237,7 @@ function isOmegaFast(x::Surreal)
 end
 
 "true if it is -omega, false if not sure"
-function isMinusOmegaFast(x::Surreal)
+function isMinusOmegaFast(x::Surreal)::Bool
 	x == -omega && return true
 	#isInfinite(x) || return false
 	#isNegative(x) || return false

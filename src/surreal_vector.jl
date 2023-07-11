@@ -7,9 +7,9 @@ autoSurrealSet(v::Set{T}) where {T} = autoSurrealSet(collect(v))
 
 for f in [:<, :<=], T2 in [SurrealSet, Surreal]
 	eval(quote
-		@passDownType (x -> x.v) VectorSurrealSet ($T2) false ($f(x, y) = all(($f).(x, y)))
+		@passDownType (x -> x.v) VectorSurrealSet ($T2) false ($f(x, y) = all2(($f).(x, y)))
 		@commu $f(x::VectorSurrealSet, y::EmptySurrealSet) = true
-		$f(x::VectorSurrealSet, y::VectorSurrealSet) = all(v -> all(vv -> $f(vv, v), x.v), y.v)
+		$f(x::VectorSurrealSet, y::VectorSurrealSet) = all2(v -> all2(vv -> $f(vv, v), x.v), y.v)
 	end)
 end
 
@@ -22,7 +22,7 @@ function Base.show(io::IO, x::VectorSurrealSet)
 	end
 	print(io, "}")
 end
-isDyadic(x::VectorSurrealSet) = all(isDyadic, x.v)
+isDyadic(x::VectorSurrealSet)::Bool = all(isDyadic, x.v)
 
 -(x::VectorSurrealSet) = VectorSurrealSet(.-x.v)
 

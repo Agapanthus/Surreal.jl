@@ -17,7 +17,7 @@ autoSurrealSet(x::SubSe) = CountedSurrealSet(x)
 
 isequal(x::CountedSurrealSet, y::CountedSurrealSet) = isequal(x.e, y.e)
 Base.show(io::IO, x::CountedSurrealSet) = print(io, x.e)
-isDyadic(x::CountedSurrealSet) = false
+isDyadic(x::CountedSurrealSet)::Bool = false
 
 for f in [
 	:isLimited,
