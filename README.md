@@ -23,3 +23,15 @@ No::MaybeBool = 0
 5
 
 ```
+
+# TODO
+
+goals of v0.0.3:
+
+ - don't use recursion and multiple dispatch, but iterate directly
+ - same surreal number = same memory location (within context). Simplifies type checks.
+ - maximum type stability
+ - cache everything (comparison, etc...) in ctx
+   - ctx should be contiguous!
+ - don't rely too much on omega-vs-dyadic properties like "isFinite" in rewriting - find more general concepts, i.e, compare archimedean classes!
+ - be consistent with Julia naming, i.e., isfinite instead of isFinite
